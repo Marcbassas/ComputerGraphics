@@ -397,3 +397,20 @@ void FloatImage::Resize(unsigned int width, unsigned int height)
 	this->height = height;
 	pixels = new_pixels;
 }
+
+//LAB 1 - PRIMITIVES
+void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) { //2.1.1
+	//implementar aqui el algoritme DDA per a dibuixar una linia
+	}
+void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth, bool isFilled, const Color& fillColor) { //2.1.2
+	//implementar aqui el algoritme per a dibuixar un rectangle
+}
+void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor) { //2.1.3
+	//implementar aqui el algoritme per a dibuixar un triangle
+}
+void Image::ScanLineDDA(int y, float x0, float x1, const Color& c) {
+	//versio modificada del algorisme DDA 
+}
+
+
+
