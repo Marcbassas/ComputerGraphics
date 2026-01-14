@@ -401,15 +401,63 @@ void FloatImage::Resize(unsigned int width, unsigned int height)
 //LAB 1 - PRIMITIVES
 void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) { //2.1.1
 	//implementar aqui el algoritme DDA per a dibuixar una linia
+	int dx = x1 - x0; //diferencia de x
+	int dy = y1 - y0; //diferencia de y
+	int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy); //nombre de passos a fer
+	if (steps == 0) { //si no hi ha passos, dibuixem un pixel
+		SetPixel(x0, y0, c); //dibuixem un pixel
+		return;
 	}
+	float x_increment = dx / (float)steps; //increment de x per cada pas
+	float y_increment = dy / (float)steps; //increment de y per cada pas
+
+	float x = (float)x0; //posicio inicial de x
+	float y = (float)y0; //posicio inicial de y
+	for (int i = 0; i <= steps; i++) {
+		SetPixel((int)round(x), (int)round(y), c); //dibuixem el pixel a la posicio actual
+		x += x_increment; //incrementem x
+		y += y_increment; //incrementem y
+	}
+}
+
 void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth, bool isFilled, const Color& fillColor) { //2.1.2
 	//implementar aqui el algoritme per a dibuixar un rectangle
+	if (isFilled) { //si el rectangle es ple
+		for (int i = y; i < y + h; i++) { //per cada fila
+			for (int j = x; j < x + w; j++) { //per cada columna
+				SetPixel(j, i, fillColor); //dibuixem el pixel
+			}
+		}
+	}
+	//dibuixem el contorn --> isFilled = false
+	for (int i = 0; i < borderWidth; i++) { //per cada pixel del contorn
+		//superior
+		DrawLineDDA(x, y + i, x + w - 1, y + i, borderColor);
+		//inferior
+		DrawLineDDA(x, y + h - 1 - i, x + w - 1, y + h - 1 - i, borderColor);
+		//esquerra
+		DrawLineDDA(x + i, y, x + i, y + h - 1, borderColor);
+		//dreta 
+		DrawLineDDA(x + w - 1 - i, y, x + w - 1 - i, y + h - 1, borderColor);
+	}
 }
 void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor) { //2.1.3
 	//implementar aqui el algoritme per a dibuixar un triangle
 }
 void Image::ScanLineDDA(int y, float x0, float x1, const Color& c) {
 	//versio modificada del algorisme DDA 
+	int dx = (int)(x1 - x0); //diferencia de x
+	int steps = abs(dx); //nombre de passos a fer
+	if (steps == 0) { //si no hi ha passos, dibuixem un pixel
+		SetPixel((int)round(x0), y, c); //dibuixem un pixel
+		return;
+	}
+	float x_increment = dx / (float)steps; //increment de x per cada pas
+	float x = x0; //posicio inicial de x
+	for (int i = 0; i <= steps; i++) {
+		SetPixel((int)round(x), y, c); //dibuixem el pixel a la posicio actual
+		x += x_increment; //incrementem x
+	}
 }
 
 
