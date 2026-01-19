@@ -441,24 +441,94 @@ void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int b
 		DrawLineDDA(x + w - 1 - i, y, x + w - 1 - i, y + h - 1, borderColor);
 	}
 }
-void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor) { //2.1.3
-	//implementar aqui el algoritme per a dibuixar un triangle
-}
-void Image::ScanLineDDA(int y, float x0, float x1, const Color& c) {
-	//versio modificada del algorisme DDA 
-	int dx = (int)(x1 - x0); //diferencia de x
-	int steps = abs(dx); //nombre de passos a fer
-	if (steps == 0) { //si no hi ha passos, dibuixem un pixel
-		SetPixel((int)round(x0), y, c); //dibuixem un pixel
-		return;
-	}
-	float x_increment = dx / (float)steps; //increment de x per cada pas
-	float x = x0; //posicio inicial de x
+
+// Funció ScanLine per calcular els límits del triangle (AET)
+void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, std::vector<int>& maxX) {
+	// PREPARACIÓ DEL DDA (Digital Differential Analyzer) 
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+	// Calculem quina distància és més gran (horitzontal o vertical) per saber quants passos píxels hem de recórrer.
+	int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+	// Si els dos punts són el mateix, no fem res per evitar dividir per 0.
+	if (steps == 0) return;
+
+	// Calculem quant hem de sumar a la X i a la Y a cada pas per anar del punt A al B.
+	// (Per exemple: avançar 1 en X i 0.5 en Y).
+	float x_increment = dx / (float)steps;
+	float y_increment = dy / (float)steps;
+
+	// Coordenades inicials (float per tenir precisió decimal mentre avancem).
+	float x = (float)x0;
+	float y = (float)y0;
+
+	// EL BUCLE (Recorrem la línia) 
 	for (int i = 0; i <= steps; i++) {
-		SetPixel((int)round(x), y, c); //dibuixem el pixel a la posicio actual
-		x += x_increment; //incrementem x
+		// Convertim els decimals a enters (píxels reals de la pantalla).
+		int currentY = (int)round(y);
+		int currentX = (int)round(x);
+
+		// ACTUALITZACIÓ DE LA TAULA 
+		//(Només processem si estem dins de l'alçada de la imatge)!!
+		if (currentY >= 0 && currentY < height) {
+
+			if (currentX < minX[currentY]) { // minX[currentY] guarda el valor de X més a l'esquerra trobat fins ara a l'alçada Y.
+				minX[currentY] = currentX; // Si la X actual és MÉS PETITA que la que teníem guardada, la substituïm.
+			} // Així trobem on comensarà a pintar-se el triangle en aquesta línia.
+			
+			if (currentX > maxX[currentY]) { // maxX[currentY] guarda el valor de X més a la dreta trobat fins ara.
+				maxX[currentY] = currentX; // Si la X actual és MÉS GRAN, la substituïm.
+			} // Així trobem on acabarà el triangle en aquesta línia.
+		}
+
+		// Avancem al següent punt de la línia
+		x += x_increment;
+		y += y_increment;
 	}
 }
 
+//Funció per dibuixar el triangle
+void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor) {
 
+	// 1. L'INTERIOR 
+	if (isFilled) {
+		// Creem dos vectors (arrays) amb tantes posicions com l'alçada de la pantalla.
 
+		std::vector<int> minX(height, width); // minX l'omplim amb 'width' perquè volem trobar el valor MÍNIM.
+		// Si posem un valor molt alt d'inici, qualsevol punt que trobem serà més petit i el guardarà.
+
+		std::vector<int> maxX(height, -1); // maxX l'omplim amb -1 perquè volem trobar el MÀXIM
+		//Començant amb un valor molt baix, qualsevol punt que trobem serà més gran i el guardarà.
+
+		// Enviem el "ScanLineDDA" a recórrer les 3 parets del triangle.
+		// Això omplirà les taules minX i maxX amb la forma del triangle.
+		ScanLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, minX, maxX); // Costat 1
+		ScanLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, minX, maxX); // Costat 2
+		ScanLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, minX, maxX); // Costat 3
+
+		// Ara recorrem tota la pantalla de dalt a baix (fila per fila).
+		for (int y = 0; y < height; y++) {
+
+			// Comprovem si en aquesta fila 'y' hi ha triangle.
+			// Si minX <= maxX, vol dir que hem trobat un inici i un final vàlids.
+			if (minX[y] <= maxX[y] && maxX[y] != -1) {
+
+				// Bucle horitzontal: Pintem tots els píxels des del límit esquerre (min) fins al dret (max).
+				for (int x = minX[y]; x <= maxX[y]; x++) {
+
+					// (Mirem que no pinti fora de la pantalla lateralment)!
+					if (x >= 0 && x < width) {
+						SetPixel(x, y, fillColor); // Pinta el píxel de color.
+					}
+				}
+			}
+		}
+	}
+
+	// 2. EL CONTORN 
+	// Finalment, dibuixem les línies exteriors a sobre. 
+	// Per això fem servir la funció simple DrawLineDDA.
+	DrawLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, borderColor);
+	DrawLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, borderColor);
+	DrawLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, borderColor);
+}

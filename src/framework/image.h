@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "framework.h"
+#include <vector> // Necessària pel ScanLine
 
 //remove unsafe warnings
 #ifndef _CRT_SECURE_NO_WARNINGS
@@ -74,8 +75,8 @@ public:
 	void DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c); //2.1.1
 	void DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth, bool isFilled, const Color& fillColor); //2.1.2
 	void DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor); //2.1.3
-	void ScanLineDDA(int y, float x0, float x1, const Color& c); //helper per a l'algoritme de dibuix de triangles
-
+	void ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, std::vector<int>& maxX);//helper per a l'algoritme de dibuix de triangles
+	void DrawImage(const Image& image, int x, int y); //Funció que afageix una imatge (2.2)
 
 	// Returns a new image with the area from (startx,starty) of size width,height
 	Image GetArea(unsigned int start_x, unsigned int start_y, unsigned int width, unsigned int height);

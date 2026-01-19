@@ -28,18 +28,39 @@ void Application::Init(void)
 	std::cout << "Initiating app..." << std::endl;
 }
 
+/*
 // Render one frame
 //pinta el framebuffer a la finestra
-void Application::Render(void){
+void Application::Render(void) {
 	//prova del DrawLineDDA
 	framebuffer.Fill(Color::BLACK);
-	//center de la finestra
+	//centre de la finestra
 	int x = window_width / 2;
 	int y = window_height / 2;
 	Color color = Color::WHITE; //escollir color blanc
 	framebuffer.DrawLineDDA(x, y, x + 100 * cos(time), y + 100 * sin(time), color);
 	framebuffer.Render();
 }
+*/
+
+/*
+//Render Triangle 2.1.3
+void Application::Render(void) {
+	// 1. Netejar la pantalla
+	framebuffer.Fill(Color::BLACK);
+
+	// 2. Definim 3 punts quiets:	
+	Vector2 p0(400, 100); // Punt de dalt (centre)
+	Vector2 p1(200, 450); // Punt de baix esquerra
+	Vector2 p2(600, 450); // Punt de baix dreta
+
+	// 3. Dibuixem el triangle estàtic
+	framebuffer.DrawTriangle(p0, p1, p2, Color::WHITE, true, Color::RED);
+
+	// 4. Mostrar a la finestra
+	framebuffer.Render();
+}
+*/
 
 // Called after render
 //actualittza l'aplicacio en funcio del temps que ha passat
