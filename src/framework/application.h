@@ -56,6 +56,8 @@ public:
 	//variables globals per a l'eina actual, color, amplada del contorn i si omplir formes
 	std::vector<Button> buttons;
 
+	Image preview_framebuffer; //framebuffer de previsualització
+
 	ToolType current_tool = TOOL_PENCIL;
 	Color current_color = Color::WHITE;
 	int border_width = 1;
@@ -103,6 +105,7 @@ public:
 		this->window_width = width;
 		this->window_height = height;
 		this->framebuffer.Resize(width, height);
+		this->preview_framebuffer.Resize(width, height);
 	}
 
 	Vector2 GetWindowSize()

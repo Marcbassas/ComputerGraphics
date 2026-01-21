@@ -63,7 +63,8 @@ void Application::Init(void) { //inicialitza l'aplicació
 	buttons.push_back(Button(load_img, Vector2(x, y), BUTTON_LOAD));  y += load_img.height + sep; //boto carregar
 	buttons.push_back(Button(save_img, Vector2(x, y), BUTTON_SAVE)); //boto desar
 
-	framebuffer.Fill(Color::WHITE);
+	framebuffer.Fill(Color::WHITE); //inicialitzar el framebuffer a blanc
+	preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
 
 }
 
@@ -107,31 +108,55 @@ void Application::Render(void) {
 	framebuffer.Render();
 }
 */
-void Application::Render(void){
-	for (auto& b : buttons) //dibuixar botons
-		b.Render(framebuffer);
-	if (is_drawing) { //si s'està dibuixant
-		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma)
+void Application::Render(void)
+{
+	// 1. Comencem amb una còpia del dibuix permanent
+	preview_framebuffer = framebuffer;
+
+	// 2. PREVIEW temporal (només si estàs dibuixant i el ratolí s'ha mogut)
+	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y))
+	{
+		Color preview = Color(0.0f, 0.0f, 1.0f); // blau per previsualitzar
+
 		switch (current_tool)
 		{
-		case TOOL_PENCIL: //llapis
-			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
-			start_pos = current_pos;
+		case TOOL_LINE:
+			preview_framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, preview);
 			break;
 
-		case TOOL_ERASER: //goma
-			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, Color::WHITE);
-			start_pos = current_pos;
+		case TOOL_RECT:
+		{
+			int x = std::min(start_pos.x, current_pos.x);
+			int y = std::min(start_pos.y, current_pos.y);
+			int w = std::abs(current_pos.x - start_pos.x);
+			int h = std::abs(current_pos.y - start_pos.y);
+			preview_framebuffer.DrawRect(x, y, w, h, preview, border_width, fill_shapes, preview);
 			break;
+		}
 
-		default: 
-			// Per LINE, RECT, TRIANGLE no fem res aquí
+		case TOOL_TRIANGLE:
+		{
+			Vector2 p0 = start_pos;
+			Vector2 p1(current_pos.x, start_pos.y);
+			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
+			preview_framebuffer.DrawTriangle(p0, p1, p2, preview, fill_shapes, preview);
+			break;
+		}
+
+		default:
 			break;
 		}
 	}
 
-	framebuffer.Render();
+	// 3. Dibuixar botons sobre la preview
+	for (auto& b : buttons)
+		b.Render(preview_framebuffer);
+
+	// 4. Mostrar a la finestra
+	preview_framebuffer.Render();
 }
+
+
 
 
 
@@ -155,25 +180,30 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 	if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
 		Vector2 mouse(event.x, window_height - event.y); 
 		for (auto& b : buttons) { //recorre=er tots els botons
-			if (b.IsMouseInside(mouse)){
-				switch (b.type) { //comprovar tipus de botó
-				case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break; //canviar eina actual
+			if (b.IsMouseInside(mouse)) {
+				// Reset de preview per evitar figures fantasma
+				is_drawing = false;
+				start_pos = Vector2(-1, -1);
+				current_pos = Vector2(-1, -1);
+				switch (b.type) {
+				case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break;
 				case BUTTON_LINE: current_tool = TOOL_LINE; break;
 				case BUTTON_RECT: current_tool = TOOL_RECT; break;
-				case BUTTON_TRIANGLE: current_tool = TOOL_TRIANGLE; break; 
-				case BUTTON_ERASER: current_tool = TOOL_ERASER; break; 
+				case BUTTON_TRIANGLE: current_tool = TOOL_TRIANGLE; break;
+				case BUTTON_ERASER: current_tool = TOOL_ERASER; break;
 
-				case BUTTON_COLOR_RED: current_color = Color::RED; break; //canviar color actual
-				case BUTTON_COLOR_GREEN: current_color = Color::GREEN; break; 
-				case BUTTON_COLOR_BLUE: current_color = Color::BLUE; break; 
+				case BUTTON_COLOR_RED: current_color = Color::RED; break;
+				case BUTTON_COLOR_GREEN: current_color = Color::GREEN; break;
+				case BUTTON_COLOR_BLUE: current_color = Color::BLUE; break;
 
-				case BUTTON_CLEAR: framebuffer.Fill(Color::WHITE); break; //netejar imatge
-				case BUTTON_LOAD: framebuffer.LoadPNG("images/canvas.png"); break; //carregar imatge des de "canvas.png"
-				case BUTTON_SAVE: framebuffer.SaveTGA("output.tga"); break; //desar imatge a "output.tga"
+				case BUTTON_CLEAR: framebuffer.Fill(Color::WHITE); break;
+				case BUTTON_LOAD: framebuffer.LoadPNG("images/canvas.png"); break;
+				case BUTTON_SAVE: framebuffer.SaveTGA("output.tga"); break;
 				}
-
 				return;
 			}
+
+
 		}
 
 		// Si no ha clicat cap botó → comencem a dibuixar
@@ -184,17 +214,22 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 }
 
 
-void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (RELEASE)
-	if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
-		is_drawing = false; //indicar que s'ha deixat de dibuixar
-		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma)
+void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
+{
+	if (event.button == SDL_BUTTON_LEFT)
+	{
+		is_drawing = false;
 
-		switch (current_tool) { //segons l'eina actual
-		case TOOL_LINE: //dibuixar línia
+		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+
+		switch (current_tool)
+		{
+		case TOOL_LINE:
 			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
 			break;
 
-		case TOOL_RECT: { //dibuixar rectangle
+		case TOOL_RECT:
+		{
 			int x = std::min(start_pos.x, current_pos.x);
 			int y = std::min(start_pos.y, current_pos.y);
 			int w = std::abs(current_pos.x - start_pos.x);
@@ -203,7 +238,8 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 			break;
 		}
 
-		case TOOL_TRIANGLE: { //dibuixar triangle
+		case TOOL_TRIANGLE:
+		{
 			Vector2 p0 = start_pos;
 			Vector2 p1(current_pos.x, start_pos.y);
 			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
@@ -216,9 +252,31 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 
 
 
-void Application::OnMouseMove(SDL_MouseButtonEvent event){ //detecta el moviment del ratoli
-	current_pos.set(event.x, window_height - event.y); // Convertim coordenades de SDL a les nostres (origen a baix a l'esquerra)
+void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
+	Vector2 mouse(event.x, window_height - event.y);
+	current_pos = mouse;
+
+	if (is_drawing)
+	{
+		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+
+		switch (current_tool)
+		{
+		case TOOL_PENCIL:
+		case TOOL_ERASER:
+			// Dibuixa un segment des de l'última posició fins a l'actual
+			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
+			// Actualitza el punt inicial per al següent segment
+			start_pos = current_pos;
+			break;
+
+			// Les altres eines (LINE, RECT, TRIANGLE) només fan preview, no dibuix aquí
+		default:
+			break;
+		}
+	}
 }
+
 
 void Application::OnWheel(SDL_MouseWheelEvent event)//detecta scroll del ratoli --> zoom in/out
 {
