@@ -532,3 +532,19 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	DrawLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, borderColor);
 	DrawLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, borderColor);
 }
+
+//LAB1 - DRAWING TOOLS (2.2)
+void Image::DrawImage(const Image& image, int x, int y){
+	for (unsigned int i = 0; i < image.height; ++i) { //per cada fila de la imatge
+		int dst_y = y + i; //posicio y de la imatge
+		if (dst_y < 0 || dst_y >= (int)height) continue; //si esta fora de la imatge, saltem
+		for (unsigned int j = 0; j < image.width; ++j) { //per cada columna de la imatge
+			int dst_x = x + j; //posicio x de la imatge
+			if (dst_x < 0 || dst_x >= (int)width) continue; //si esta fora de la imatge, saltem
+			Color c = image.GetPixel(j, i); //obtenim el color del pixel de la imatge
+			SetPixel(dst_x, dst_y, c); //posem el pixel a la posicio corresponent
+		}
+	}
+}
+
+
