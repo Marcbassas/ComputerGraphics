@@ -108,52 +108,43 @@ void Application::Render(void) {
 	framebuffer.Render();
 }
 */
-void Application::Render(void)
-{
-	// 1. Comencem amb una còpia del dibuix permanent
-	preview_framebuffer = framebuffer;
+void Application::Render(void) { //renderitza l'aplicació
+	preview_framebuffer = framebuffer; //copiar el framebuffer al de previsualització
 
-	// 2. PREVIEW temporal (només si estàs dibuixant i el ratolí s'ha mogut)
-	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y))
-	{
-		Color preview = Color(0.0f, 0.0f, 1.0f); // blau per previsualitzar
+	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y)) { //si s'està dibuixant i la posició inicial és diferent de l'actual
+		Color preview = Color(0.0f, 0.0f, 0.0f); //color de previsualització
 
-		switch (current_tool)
-		{
-		case TOOL_LINE:
-			preview_framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, preview);
+		switch (current_tool) { //eina actual
+		case TOOL_LINE: //linia
+			preview_framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, preview); //dibuixar línia de previsualització
 			break;
 
-		case TOOL_RECT:
-		{
-			int x = std::min(start_pos.x, current_pos.x);
-			int y = std::min(start_pos.y, current_pos.y);
-			int w = std::abs(current_pos.x - start_pos.x);
-			int h = std::abs(current_pos.y - start_pos.y);
-			preview_framebuffer.DrawRect(x, y, w, h, preview, border_width, fill_shapes, preview);
+		case TOOL_RECT: { //rectangle
+			int x = std::min(start_pos.x, current_pos.x); //x minima
+			int y = std::min(start_pos.y, current_pos.y); //y minima
+			int w = std::abs(current_pos.x - start_pos.x); //amplada
+			int h = std::abs(current_pos.y - start_pos.y); //altura
+			preview_framebuffer.DrawRect(x, y, w, h, preview, border_width, fill_shapes, preview); //dibuixar rectangle de previsualització
 			break;
 		}
 
-		case TOOL_TRIANGLE:
-		{
-			Vector2 p0 = start_pos;
-			Vector2 p1(current_pos.x, start_pos.y);
-			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
-			preview_framebuffer.DrawTriangle(p0, p1, p2, preview, fill_shapes, preview);
+		case TOOL_TRIANGLE: { //triangle 
+			Vector2 p0 = start_pos; //punt superior
+			Vector2 p1(current_pos.x, start_pos.y); //punt inferior dret
+			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y); //punt inferior esquerra
+			preview_framebuffer.DrawTriangle(p0, p1, p2, preview, fill_shapes, preview); //dibuixar triangle de previsualització 
 			break;
 		}
 
 		default:
-			break;
+			break; //no fer res
 		}
 	}
 
-	// 3. Dibuixar botons sobre la preview
-	for (auto& b : buttons)
+	for (auto& b : buttons) //renderitzar tots els botons
 		b.Render(preview_framebuffer);
 
-	// 4. Mostrar a la finestra
-	preview_framebuffer.Render();
+	preview_framebuffer.Render(); //mostrar el framebuffer de previsualització a la finestra
 }
 
 
@@ -185,7 +176,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 				is_drawing = false;
 				start_pos = Vector2(-1, -1);
 				current_pos = Vector2(-1, -1);
-				switch (b.type) {
+				switch (b.type) { //tipus de botó
 				case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break;
 				case BUTTON_LINE: current_tool = TOOL_LINE; break;
 				case BUTTON_RECT: current_tool = TOOL_RECT; break;
@@ -214,22 +205,18 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 }
 
 
-void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
-{
-	if (event.button == SDL_BUTTON_LEFT)
-	{
-		is_drawing = false;
+void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (RELEASE)
+	if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
+		is_drawing = false; //indicar que s'ha deixat de dibuixar
 
-		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma, sinó el color actual)
 
-		switch (current_tool)
-		{
-		case TOOL_LINE:
+		switch (current_tool) { //eina actual
+		case TOOL_LINE: //línia
 			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
 			break;
 
-		case TOOL_RECT:
-		{
+		case TOOL_RECT: { //rectangle
 			int x = std::min(start_pos.x, current_pos.x);
 			int y = std::min(start_pos.y, current_pos.y);
 			int w = std::abs(current_pos.x - start_pos.x);
@@ -238,8 +225,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 			break;
 		}
 
-		case TOOL_TRIANGLE:
-		{
+		case TOOL_TRIANGLE: { //triangle
 			Vector2 p0 = start_pos;
 			Vector2 p1(current_pos.x, start_pos.y);
 			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
@@ -253,26 +239,20 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
-	Vector2 mouse(event.x, window_height - event.y);
-	current_pos = mouse;
+	Vector2 mouse(event.x, window_height - event.y); //convertir coordenades del ratolí
+	current_pos = mouse; //actualitzar la posició actual del ratolí
 
-	if (is_drawing)
-	{
-		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+	if (is_drawing) { //si s'està dibuixant
+		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma, sinó el color actual)
 
-		switch (current_tool)
-		{
-		case TOOL_PENCIL:
-		case TOOL_ERASER:
-			// Dibuixa un segment des de l'última posició fins a l'actual
-			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
-			// Actualitza el punt inicial per al següent segment
-			start_pos = current_pos;
+		switch (current_tool) {
+		case TOOL_PENCIL: //llapis
+		case TOOL_ERASER: //goma
+			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color); //dibuixar línia des de la posició inicial fins a la actual
+			start_pos = current_pos; //actualitzar la posició inicial a la actual
 			break;
-
-			// Les altres eines (LINE, RECT, TRIANGLE) només fan preview, no dibuix aquí
-		default:
-			break;
+		default: 
+			break; //no fer res
 		}
 	}
 }
