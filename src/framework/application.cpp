@@ -197,7 +197,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 				case BUTTON_COLOR_BLUE: current_color = Color::BLUE; break;
 
 				case BUTTON_CLEAR: framebuffer.Fill(Color::WHITE); break;
-				case BUTTON_LOAD: framebuffer.LoadPNG("images/canvas.png"); break;
+				case BUTTON_LOAD: framebuffer.LoadPNG("images/fruits.png"); break;
 				case BUTTON_SAVE: framebuffer.SaveTGA("output.tga"); break;
 				}
 				return;
