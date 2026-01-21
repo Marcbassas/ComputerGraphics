@@ -26,7 +26,48 @@ Application::~Application()
 void Application::Init(void)
 {
 	std::cout << "Initiating app..." << std::endl;
+
+	// Carregar icones
+	Image pencil_img;  pencil_img.LoadPNG("images/pencil.png");
+	Image line_img;    line_img.LoadPNG("images/line.png");
+	Image rect_img;    rect_img.LoadPNG("images/rectangle.png");
+	Image tri_img;     tri_img.LoadPNG("images/triangle.png");
+	Image eraser_img;  eraser_img.LoadPNG("images/eraser.png");
+	Image clear_img;   clear_img.LoadPNG("images/clear.png");
+	Image load_img;    load_img.LoadPNG("images/load.png");
+	Image save_img;    save_img.LoadPNG("images/save.png");
+	Image red_img;     red_img.LoadPNG("images/red.png");
+	Image green_img;   green_img.LoadPNG("images/green.png");
+	Image blue_img;    blue_img.LoadPNG("images/blue.png");
+
+	int x = 10; // posició fixa
+	int y = 10; // posició inicial
+	int sep = 5; // separació entre botons
+
+	// EINES
+	buttons.push_back(Button(pencil_img, Vector2(x, y), BUTTON_PENCIL)); y += pencil_img.height + sep;
+	buttons.push_back(Button(line_img, Vector2(x, y), BUTTON_LINE));   y += line_img.height + sep;
+	buttons.push_back(Button(rect_img, Vector2(x, y), BUTTON_RECT));   y += rect_img.height + sep;
+	buttons.push_back(Button(tri_img, Vector2(x, y), BUTTON_TRIANGLE)); y += tri_img.height + sep;
+	buttons.push_back(Button(eraser_img, Vector2(x, y), BUTTON_ERASER)); y += eraser_img.height + sep;
+
+	y += 10; // separació entre grups
+
+	// COLORS
+	buttons.push_back(Button(red_img, Vector2(x, y), BUTTON_COLOR_RED));   y += red_img.height + sep;
+	buttons.push_back(Button(green_img, Vector2(x, y), BUTTON_COLOR_GREEN)); y += green_img.height + sep;
+	buttons.push_back(Button(blue_img, Vector2(x, y), BUTTON_COLOR_BLUE));  y += blue_img.height + sep;
+
+	y += 10; // separació entre grups
+
+	// ACCIONS
+	buttons.push_back(Button(clear_img, Vector2(x, y), BUTTON_CLEAR)); y += clear_img.height + sep;
+	buttons.push_back(Button(load_img, Vector2(x, y), BUTTON_LOAD));  y += load_img.height + sep;
+	buttons.push_back(Button(save_img, Vector2(x, y), BUTTON_SAVE));
 }
+
+
+
 
 /*
 // Render one frame
@@ -43,9 +84,10 @@ void Application::Render(void) {
 }
 */
 
-/*
+
 //Render Triangle 2.1.3
 void Application::Render(void) {
+	/*
 	// 1. Netejar la pantalla
 	framebuffer.Fill(Color::BLACK);
 
@@ -59,8 +101,13 @@ void Application::Render(void) {
 
 	// 4. Mostrar a la finestra
 	framebuffer.Render();
+	*/
+	framebuffer.Fill(Color::WHITE); // Dibuixar botons 
+	for (auto& b : buttons) 
+		b.Render(framebuffer); 
+	framebuffer.Render();
 }
-*/
+
 
 // Called after render
 //actualittza l'aplicacio en funcio del temps que ha passat
