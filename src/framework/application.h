@@ -56,19 +56,21 @@ public:
 	//variables globals per a l'eina actual, color, amplada del contorn i si omplir formes
 	std::vector<Button> buttons;
 
+	//modes
+	int current_mode = 1;      // 1 = Paint, 2 = Animation
+	bool fill_shapes = false;  // F = toggle
+	int border_width = 1;      // + / -
+
+	//framebuffers
 	Image preview_framebuffer; //framebuffer de previsualització
+	Image framebuffer;
 
-	ToolType current_tool = TOOL_PENCIL;
-	Color current_color = Color::WHITE;
-	int border_width = 1;
-	bool fill_shapes = false;
-
+	// Tool state
 	bool is_drawing = false;
 	Vector2 start_pos;
 	Vector2 current_pos;
 
 	// Window
-
 	SDL_Window* window = nullptr;
 	int window_width;
 	int window_height;
@@ -87,9 +89,6 @@ public:
 	void OnMouseMove(SDL_MouseButtonEvent event);
 	void OnWheel(SDL_MouseWheelEvent event);
 	void OnFileChanged(const char* filename);
-
-	// CPU Global framebuffer
-	Image framebuffer;
 
 	// Constructor and main methods
 	Application(const char* caption, int width, int height);

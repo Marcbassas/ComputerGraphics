@@ -163,7 +163,37 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)//detecta tecla premuda
 {
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
 	switch(event.keysym.sym) {
+
 		case SDLK_ESCAPE: exit(0); break; // ESC key, kill the app
+		//1 --> paint mode
+		case SDLK_1: 
+			current_mode = 1; 
+			std::cout << "Paint mode" << std::endl; 
+			break;
+
+		//2 --> animation mode
+		case SDLK_2: 
+			current_mode = 2; 
+			std::cout << "Animation mode" << std::endl; 
+			break;
+
+		//F --> toggle fill shapes
+		case SDLK_f:
+			fill_shapes = !fill_shapes; 
+			std::cout << "Fill shapes: " << (fill_shapes ? "ON" : "OFF") << std::endl; 
+			break;
+
+		//+ --> increase border width
+		case SDLK_PLUS:
+			border_width++;
+			std::cout << "Border width: " << border_width << std::endl;
+			break;
+
+		//- --> decrease border width
+		case SDLK_MINUS:
+			border_width--;
+			std::cout << "Border width: " << border_width << std::endl;
+			break;
 	}
 }
 
