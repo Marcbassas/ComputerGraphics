@@ -66,6 +66,7 @@ void Application::Init(void) { //inicialitza l'aplicació
 	framebuffer.Fill(Color::WHITE); //inicialitzar el framebuffer a blanc
 	preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
 
+	rain.Init(window_width, window_height); //2.3
 }
 
 
@@ -109,6 +110,16 @@ void Application::Render(void) {
 }
 */
 void Application::Render(void) { //renderitza l'aplicació
+
+	// --- NOU: BLOC PER L'ANIMACIÓ DE PARTÍCULES ---
+	if (current_mode == 2) {
+		framebuffer.Fill(Color::BLACK); // Esborrem la pantalla a negre
+		rain.Render(&framebuffer);      // Dibuixem les gotes
+		framebuffer.Render();           // Enviem la imatge a la finestra
+		return;                         // SORTIM (no dibuixem res més)
+	}
+
+	// A partir d'aquí codi del paint
 	preview_framebuffer = framebuffer; //copiar el framebuffer al de previsualització
 
 	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y)) { //si s'està dibuixant i la posició inicial és diferent de l'actual
@@ -155,7 +166,10 @@ void Application::Render(void) { //renderitza l'aplicació
 //actualittza l'aplicacio en funcio del temps que ha passat
 void Application::Update(float seconds_elapsed)
 {
-
+	// Si estem en Mode 2 (Animació), actualitzem la pluja
+	if (current_mode == 2) {
+		rain.Update(seconds_elapsed, window_width, window_height);
+	}
 }
 
 //keyboard press event 
