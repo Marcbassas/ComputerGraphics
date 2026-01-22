@@ -197,6 +197,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)//detecta tecla premuda
 
 		//+ --> increase border width
 		case SDLK_PLUS:
+		case SDLK_EQUALS: //perquè el + està al mateix botó que =
 			border_width++;
 			std::cout << "Border width: " << border_width << std::endl;
 			break;
