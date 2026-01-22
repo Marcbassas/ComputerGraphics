@@ -25,7 +25,7 @@ Application::~Application(){
 void Application::Init(void) { //inicialitza l'aplicació
 	std::cout << "Initiating app..." << std::endl;
 
-	//Carregar icones
+	//carregar icones
 	Image pencil_img;  pencil_img.LoadPNG("images/pencil.png");
 	Image line_img;    line_img.LoadPNG("images/line.png");
 	Image rect_img;    rect_img.LoadPNG("images/rectangle.png");
@@ -38,16 +38,16 @@ void Application::Init(void) { //inicialitza l'aplicació
 	Image green_img;   green_img.LoadPNG("images/green.png");
 	Image blue_img;    blue_img.LoadPNG("images/blue.png");
 
-	int x = 10; // posició fixa
-	int y = 10; // posició inicial
-	int sep = 5; // separació entre botons
+	int x = 10; //posició fixa
+	int y = 10; //posició inicial
+	int sep = 5; //separació entre botons
 
-	//EINES
-	buttons.push_back(Button(pencil_img, Vector2(x, y), BUTTON_PENCIL)); y += pencil_img.height + sep; //boto llapis
-	buttons.push_back(Button(line_img, Vector2(x, y), BUTTON_LINE));   y += line_img.height + sep; //boto línia
-	buttons.push_back(Button(rect_img, Vector2(x, y), BUTTON_RECT));   y += rect_img.height + sep; //boto rectangle
-	buttons.push_back(Button(tri_img, Vector2(x, y), BUTTON_TRIANGLE)); y += tri_img.height + sep; //boto triangle
-	buttons.push_back(Button(eraser_img, Vector2(x, y), BUTTON_ERASER)); y += eraser_img.height + sep; //boto goma
+	//EINES --> Button(icona, posició, tipus)
+	buttons.push_back(Button(pencil_img, Vector2(x, y), BUTTON_PENCIL)); y += pencil_img.height + sep; //llapis
+	buttons.push_back(Button(line_img, Vector2(x, y), BUTTON_LINE));   y += line_img.height + sep; //línia
+	buttons.push_back(Button(rect_img, Vector2(x, y), BUTTON_RECT));   y += rect_img.height + sep; //rectangle
+	buttons.push_back(Button(tri_img, Vector2(x, y), BUTTON_TRIANGLE)); y += tri_img.height + sep; //triangle
+	buttons.push_back(Button(eraser_img, Vector2(x, y), BUTTON_ERASER)); y += eraser_img.height + sep; //goma
 
 	y += 10; //separació entre grups
 
@@ -66,7 +66,7 @@ void Application::Init(void) { //inicialitza l'aplicació
 	framebuffer.Fill(Color::WHITE); //inicialitzar el framebuffer a blanc
 	preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
 
-	rain.Init(window_width, window_height); //2.3
+	rain.Init(window_width, window_height); //2.3 --> inicialitzar la pluja
 }
 
 
@@ -110,16 +110,15 @@ void Application::Render(void) {
 }
 */
 void Application::Render(void) { //renderitza l'aplicació
-
-	// --- NOU: BLOC PER L'ANIMACIÓ DE PARTÍCULES ---
-	if (current_mode == 2) {
-		framebuffer.Fill(Color::BLACK); // Esborrem la pantalla a negre
-		rain.Render(&framebuffer);      // Dibuixem les gotes
-		framebuffer.Render();           // Enviem la imatge a la finestra
-		return;                         // SORTIM (no dibuixem res més)
+//---ANIMACIÓ DE PARTÍCULES---
+	if (current_mode == 2) { //si estem en mode 2 (animació)
+		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
+		rain.Render(&framebuffer);   //dibuixar gotes
+		framebuffer.Render();   //mostrar framebuffer a la finestra
+		return;     //SORTIM (no dibuixem res més)
 	}
 
-	// A partir d'aquí codi del paint
+	//codi del paint
 	preview_framebuffer = framebuffer; //copiar el framebuffer al de previsualització
 
 	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y)) { //si s'està dibuixant i la posició inicial és diferent de l'actual
@@ -153,7 +152,7 @@ void Application::Render(void) { //renderitza l'aplicació
 	}
 
 	for (auto& b : buttons) //renderitzar tots els botons
-		b.Render(preview_framebuffer);
+		b.Render(preview_framebuffer); //dibuixar botó al framebuffer de previsualització
 
 	preview_framebuffer.Render(); //mostrar el framebuffer de previsualització a la finestra
 }
@@ -164,11 +163,10 @@ void Application::Render(void) { //renderitza l'aplicació
 
 // Called after render
 //actualittza l'aplicacio en funcio del temps que ha passat
-void Application::Update(float seconds_elapsed)
-{
-	// Si estem en Mode 2 (Animació), actualitzem la pluja
+void Application::Update(float seconds_elapsed){
+	//si el mode actual és 2 (animació) --> actualitzar la pluja
 	if (current_mode == 2) {
-		rain.Update(seconds_elapsed, window_width, window_height);
+		rain.Update(seconds_elapsed, window_width, window_height); //update(temps, amplada finestra, altura finestra)
 	}
 }
 
@@ -216,12 +214,12 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 		Vector2 mouse(event.x, window_height - event.y); 
 		for (auto& b : buttons) { //recorre=er tots els botons
 			if (b.IsMouseInside(mouse)) {
-				// Reset de preview per evitar figures fantasma
-				is_drawing = false;
-				start_pos = Vector2(-1, -1);
-				current_pos = Vector2(-1, -1);
+				//reset de preview per evitar figures fantasma
+				is_drawing = false; //indicar que no s'està dibuixant
+				start_pos = Vector2(-1, -1); //posició inicial fora de la pantalla
+				current_pos = Vector2(-1, -1); //posició actual fora de la pantalla
 				switch (b.type) { //tipus de botó
-				case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break;
+				case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break; 
 				case BUTTON_LINE: current_tool = TOOL_LINE; break;
 				case BUTTON_RECT: current_tool = TOOL_RECT; break;
 				case BUTTON_TRIANGLE: current_tool = TOOL_TRIANGLE; break;
@@ -241,7 +239,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 
 		}
 
-		// Si no ha clicat cap botó → comencem a dibuixar
+		//si no ha clicat cap botó → comencem a dibuixar
 		is_drawing = true; //indicar que s'està dibuixant
 		start_pos = mouse; //guardar la posició inicial del ratolí
 		current_pos = mouse; //guardar la posició actual del ratolí
@@ -260,7 +258,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
 			break;
 
-		case TOOL_RECT: { //rectangle
+		case TOOL_RECT: { //rectangle --> variables per a les dimensions(4)
 			int x = std::min(start_pos.x, current_pos.x);
 			int y = std::min(start_pos.y, current_pos.y);
 			int w = std::abs(current_pos.x - start_pos.x);
@@ -269,7 +267,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 			break;
 		}
 
-		case TOOL_TRIANGLE: { //triangle
+		case TOOL_TRIANGLE: { //triangle --> punts del triangle(3)
 			Vector2 p0 = start_pos;
 			Vector2 p1(current_pos.x, start_pos.y);
 			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);

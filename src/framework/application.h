@@ -6,20 +6,21 @@
 #include "main/includes.h"
 #include "framework.h"
 #include "image.h"
-#include "utils.h" //Per la aletorietat
-//---------------- BUTTON CLASS ----------------
-enum ButtonType { //tipus de botó 
-	BUTTON_PENCIL, //botó llapis
-	BUTTON_COLOR_RED, //botó color vermell
-	BUTTON_COLOR_GREEN, //botó color verd
-	BUTTON_COLOR_BLUE, //botó color blau
-	BUTTON_ERASER, //botó goma
-	BUTTON_TRIANGLE, //botó triangle
-	BUTTON_LINE, //botó línia
-	BUTTON_RECT, //botó rectangle 
-	BUTTON_CLEAR, //botó netejar
-	BUTTON_LOAD, //botó carregar
-	BUTTON_SAVE //botó desar
+#include "utils.h" //per el random
+
+//----------------CLASE BOTÓ ----------------
+enum ButtonType { 
+	BUTTON_PENCIL, //llapis
+	BUTTON_COLOR_RED, //color vermell
+	BUTTON_COLOR_GREEN, //color verd
+	BUTTON_COLOR_BLUE, //color blau
+	BUTTON_ERASER, //goma
+	BUTTON_TRIANGLE, //triangle
+	BUTTON_LINE, //línia
+	BUTTON_RECT, //rectangle 
+	BUTTON_CLEAR, //netejar
+	BUTTON_LOAD, //carregar
+	BUTTON_SAVE //desar
 };
 
 class Button { //classe botó
@@ -41,7 +42,7 @@ public: //atributs
 	}
 };
 
-//---------------- TOOL STATE ----------------
+//----------------CLASE EINES----------------
 enum ToolType {
 	TOOL_PENCIL,
 	TOOL_LINE,
@@ -53,69 +54,67 @@ enum ToolType {
 //---------------- CLASE DE PARTICULES ---------------
 class ParticleSystem {
 public:
-	static const int MAX_PARTICLES = 500; // Nombre de gotes
+	static const int MAX_PARTICLES = 500; //num de gotes
 
 	struct Particle {
-		Vector2 position;
-		Vector2 velocity;
-		Color color;
-		float ttl;      // Vida de la particula
-		bool inactive;
+		Vector2 position; //posició
+		Vector2 velocity; //velocitat
+		Color color; //color de la particula
+		float ttl; //vida de la particula
+		bool inactive; //si la particula està inactiva
 	};
+	 
+	Particle particles[MAX_PARTICLES]; //array de particules
 
-	Particle particles[MAX_PARTICLES];
-
-	// Aquesta funció posa una partícula a punt
+	//funcio per posar una particula a una posició aleatoria --> random values de utils.h
 	void ResetParticle(Particle& p, int width, int height, bool start_at_top) {
-		p.position.x = randomValue() * width; // Posició X aleatòria (usa utils.h)
+		p.position.x = randomValue() * width; //posició x aleatòria
 
-		if (start_at_top) p.position.y = 0.0f; // Si plou, comença a dalt
-		else p.position.y = randomValue() * height; // A l'inici, per tot arreu
+		if (start_at_top) p.position.y = 0.0f; //si ha de començar a dalt
+		else p.position.y = randomValue() * height; //posició y aleatòria
 
-		p.velocity = Vector2(0.0f, 150.0f + randomValue() * 200.0f); // Cau cap avall
-		p.color = Color(200, 200, 255); // Color blauet
-		p.ttl = 2.0f + randomValue() * 3.0f; // Vida aleatòria
-		p.inactive = false;
+		p.velocity = Vector2(0.0f, 150.0f + randomValue() * 200.0f); //caure verticalment amb velocitat aleatòria
+		p.color = Color(200, 200, 255); //color blau clar
+		p.ttl = 2.0f + randomValue() * 3.0f; //vida aleatòria
+		p.inactive = false; //partícula activa 
 	}
 
-	void Init(int width, int height) {
-		for (int i = 0; i < MAX_PARTICLES; i++) {
-			ResetParticle(particles[i], width, height, false);
+	void Init(int width, int height) { //inicialitza totes les particules
+		for (int i = 0; i < MAX_PARTICLES; i++) { //for per cada particula
+			ResetParticle(particles[i], width, height, false); //posa la particula a una posició aleatòria 
 		}
 	}
 
-	void Update(float dt, int width, int height) {
-		for (int i = 0; i < MAX_PARTICLES; i++) {
-			Particle& p = particles[i]; // Referència per escriure menys
+	void Update(float dt, int width, int height) { //actualitza totes les particules
+		for (int i = 0; i < MAX_PARTICLES; i++) { //for per cada particula
+			Particle& p = particles[i]; //referència a la particula actual
 
-			// 1. Moure la partícula: Posició = Posició + Velocitat * temps
+			//moure la partícula: posició = posició + velocitat * temps
 			p.position = p.position + p.velocity * dt;
 
-			// 2. Restar vida
+			//restar vida a la partícula
 			p.ttl -= dt;
 
-			// 3. Si surt de la pantalla per baix (Y > height) o s'acaba el temps...
+			//si surt de la pantalla per baix (Y > height) o s'acaba el temps...
 			if (p.position.y > height || p.ttl <= 0) {
-				// La regenerem a dalt de tot (true) perquè segueixi plovent
-				ResetParticle(p, width, height, true);
+				//la regenerem a dalt de tot (true) perquè segueixi plovent
+				ResetParticle(p, width, height, true); //es torna a posar a dalt
 			}
 		}
 	}
 
-	void Render(Image* framebuffer) {
+	void Render(Image* framebuffer) { //dibuixa totes les particules --> framebuffer
 		for (int i = 0; i < MAX_PARTICLES; i++) {
 			// Només dibuixem si està dins la pantalla
-			if (particles[i].position.x >= 0 && particles[i].position.x < framebuffer->width &&
-				particles[i].position.y >= 0 && particles[i].position.y < framebuffer->height) {
-
-				// Dibuixem un puntet de color blau
-				framebuffer->SetPixel((int)particles[i].position.x, (int)particles[i].position.y, particles[i].color);
+			if (particles[i].position.x >= 0 && particles[i].position.x < framebuffer->width && particles[i].position.y >= 0 && particles[i].position.y < framebuffer->height) { //comprova si està dins la pantalla
+				framebuffer->SetPixel((int)particles[i].position.x, (int)particles[i].position.y, particles[i].color); //dibuixa la partícula
 			}
 		}
 	}
-}; // Final de la classe ParticleSystem
+}; 
 
-//---------------- APPLICATION CLASS ----------------
+
+//----------------CLASSE APPLICATION ----------------
 class Application
 {
 public:
@@ -136,14 +135,14 @@ public:
 	Image framebuffer;
 
 	// Tool state
-	bool is_drawing = false;
-	Vector2 start_pos;
-	Vector2 current_pos;
+	bool is_drawing = false; //si esta dibuxant
+	Vector2 start_pos; //posició inicial del dibuix
+	Vector2 current_pos; //posició actual del dibuix
 
 	// Window
-	SDL_Window* window = nullptr;
-	int window_width;
-	int window_height;
+	SDL_Window* window = nullptr; 
+	int window_width; //amplada finestra
+	int window_height; //altura finestra
 
 	float time;
 

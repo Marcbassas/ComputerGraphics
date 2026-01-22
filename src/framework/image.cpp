@@ -399,7 +399,7 @@ void FloatImage::Resize(unsigned int width, unsigned int height)
 }
 
 //LAB 1 - PRIMITIVES
-void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) { //2.1.1
+void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c){ //2.1.1
 	//implementar aqui el algoritme DDA per a dibuixar una linia
 	int dx = x1 - x0; //diferencia de x
 	int dy = y1 - y0; //diferencia de y
@@ -423,14 +423,14 @@ void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) { //2.1.
 void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth, bool isFilled, const Color& fillColor) { //2.1.2
 	//implementar aqui el algoritme per a dibuixar un rectangle
 	if (isFilled) { //si el rectangle es ple
-		for (int i = y; i < y + h; i++) { //per cada fila
-			for (int j = x; j < x + w; j++) { //per cada columna
+		for (int i = y; i < y + h; i++){ //per cada fila
+			for (int j = x; j < x + w; j++){ //per cada columna
 				SetPixel(j, i, fillColor); //dibuixem el pixel
 			}
 		}
 	}
 	//dibuixem el contorn --> isFilled = false
-	for (int i = 0; i < borderWidth; i++) { //per cada pixel del contorn
+	for (int i = 0; i < borderWidth; i++){ //per cada pixel del contorn
 		//superior
 		DrawLineDDA(x, y + i, x + w - 1, y + i, borderColor);
 		//inferior
@@ -442,98 +442,74 @@ void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int b
 	}
 }
 
-// Funció ScanLine per calcular els límits del triangle (AET)
-void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, std::vector<int>& maxX) {
-	// PREPARACIÓ DEL DDA (Digital Differential Analyzer) 
-	int dx = x1 - x0;
-	int dy = y1 - y0;
-	// Calculem quina distància és més gran (horitzontal o vertical) per saber quants passos píxels hem de recórrer.
+//funció ScanLine per calcular els límits del triangle (AET)
+void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, std::vector<int>& maxX) { 
+	int dx = x1 - x0; //diferència de x
+	int dy = y1 - y0; //diferència de y
+	//calculem quina distància és més gran (horitzontal o vertical) per saber quants passos píxels hem de recórrer
 	int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
 
-	// Si els dos punts són el mateix, no fem res per evitar dividir per 0.
+	//si els dos punts són el mateix, no fem res per evitar dividir per 0
 	if (steps == 0) return;
 
-	// Calculem quant hem de sumar a la X i a la Y a cada pas per anar del punt A al B.
-	// (Per exemple: avançar 1 en X i 0.5 en Y).
-	float x_increment = dx / (float)steps;
-	float y_increment = dy / (float)steps;
+	//calculem quant hem de sumar a la X i a la Y a cada pas per anar del punt A al B
+	float x_increment = dx / (float)steps; //increment de x cada pas
+	float y_increment = dy / (float)steps; //increment de y cada pas
 
-	// Coordenades inicials (float per tenir precisió decimal mentre avancem).
+	//coordds inicials (float per tenir precisió decimal mentre avancem).
 	float x = (float)x0;
 	float y = (float)y0;
 
-	// EL BUCLE (Recorrem la línia) 
-	for (int i = 0; i <= steps; i++) {
-		// Convertim els decimals a enters (píxels reals de la pantalla).
-		int currentY = (int)round(y);
-		int currentX = (int)round(x);
+	//recorrer la línia des del punt inicial fins al final
+	for (int i = 0; i <= steps; i++){
+		int currentY = (int)round(y); //pasar de float a int
+		int currentX = (int)round(x); //pasar de float a int
 
-		// ACTUALITZACIÓ DE LA TAULA 
-		//(Només processem si estem dins de l'alçada de la imatge)!!
-		if (currentY >= 0 && currentY < height) {
-
-			if (currentX < minX[currentY]) { // minX[currentY] guarda el valor de X més a l'esquerra trobat fins ara a l'alçada Y.
-				minX[currentY] = currentX; // Si la X actual és MÉS PETITA que la que teníem guardada, la substituïm.
-			} // Així trobem on comensarà a pintar-se el triangle en aquesta línia.
+		//només processem si estem dins de l'alçada de la imatge!!
+		if (currentY >= 0 && currentY < height) { //comprovem que la Y està dins de la imatge
+			if (currentX < minX[currentY]){ // minX[currentY] guarda el valor de X més a l'esquerra trobat fins ara a l'alçada Y
+				minX[currentY] = currentX; //si la X actual és MÉS PETITA que la que teníem guardada, la substituïm
+			} 
 			
-			if (currentX > maxX[currentY]) { // maxX[currentY] guarda el valor de X més a la dreta trobat fins ara.
-				maxX[currentY] = currentX; // Si la X actual és MÉS GRAN, la substituïm.
-			} // Així trobem on acabarà el triangle en aquesta línia.
+			if (currentX > maxX[currentY]){ //maxX[currentY] guarda el valor de X més a la dreta trobat fins ara
+				maxX[currentY] = currentX; //si la X actual és MÉS GRAN, la substituïm
+			}
 		}
-
-		// Avancem al següent punt de la línia
+		//avancem al següent punt de la línia
 		x += x_increment;
 		y += y_increment;
 	}
 }
 
-//Funció per dibuixar el triangle
-void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor) {
+//funcio dibuixar triangles
+void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor){
+	//INTERIOR TRIANGLE
+	if (isFilled) { 
+		std::vector<int> minX(height, width); // minX l'omplim amb un valor molt alt perquè volem trobar el MÍNIM
+		std::vector<int> maxX(height, -1); // maxX l'omplim amb un valor molt baix perquè volem trobar el MÀXIM
+		//scanline per cada costat del triangle
+		ScanLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, minX, maxX); //costat 1
+		ScanLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, minX, maxX); //costat 2
+		ScanLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, minX, maxX); //costat 3
 
-	// 1. L'INTERIOR 
-	if (isFilled) {
-		// Creem dos vectors (arrays) amb tantes posicions com l'alçada de la pantalla.
-
-		std::vector<int> minX(height, width); // minX l'omplim amb 'width' perquè volem trobar el valor MÍNIM.
-		// Si posem un valor molt alt d'inici, qualsevol punt que trobem serà més petit i el guardarà.
-
-		std::vector<int> maxX(height, -1); // maxX l'omplim amb -1 perquè volem trobar el MÀXIM
-		//Començant amb un valor molt baix, qualsevol punt que trobem serà més gran i el guardarà.
-
-		// Enviem el "ScanLineDDA" a recórrer les 3 parets del triangle.
-		// Això omplirà les taules minX i maxX amb la forma del triangle.
-		ScanLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, minX, maxX); // Costat 1
-		ScanLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, minX, maxX); // Costat 2
-		ScanLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, minX, maxX); // Costat 3
-
-		// Ara recorrem tota la pantalla de dalt a baix (fila per fila).
-		for (int y = 0; y < height; y++) {
-
-			// Comprovem si en aquesta fila 'y' hi ha triangle.
-			// Si minX <= maxX, vol dir que hem trobat un inici i un final vàlids.
-			if (minX[y] <= maxX[y] && maxX[y] != -1) {
-
-				// Bucle horitzontal: Pintem tots els píxels des del límit esquerre (min) fins al dret (max).
-				for (int x = minX[y]; x <= maxX[y]; x++) {
-
-					// (Mirem que no pinti fora de la pantalla lateralment)!
-					if (x >= 0 && x < width) {
-						SetPixel(x, y, fillColor); // Pinta el píxel de color.
+		for (int y = 0; y < height; y++){ //recorrem totes les files de la imatge
+			if (minX[y] <= maxX[y] && maxX[y] != -1) { //si hi ha algun píxel a pintar en aquesta fila
+				for (int x = minX[y]; x <= maxX[y]; x++) { //bucle horitzontal --> per cada píxel entre minX i maxX
+					if (x >= 0 && x < width) { //mirem que la X està dins de la imatge
+						SetPixel(x, y, fillColor); //pinta el píxel
 					}
 				}
 			}
 		}
 	}
 
-	// 2. EL CONTORN 
-	// Finalment, dibuixem les línies exteriors a sobre. 
-	// Per això fem servir la funció simple DrawLineDDA.
-	DrawLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, borderColor);
-	DrawLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, borderColor);
-	DrawLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, borderColor);
+	//CONTORN TRIANGLE  
+	DrawLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, borderColor); //costat 1
+	DrawLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, borderColor); //costat 2
+	DrawLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, borderColor); //costat 3
 }
 
-//LAB1 - DRAWING TOOLS (2.2)
+//DRAWING TOOLS (2.2)
 void Image::DrawImage(const Image& image, int x, int y){
 	for (unsigned int i = 0; i < image.height; ++i) { //per cada fila de la imatge
 		int dst_y = y + i; //posicio y de la imatge
