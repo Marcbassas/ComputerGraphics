@@ -13,6 +13,6 @@ public:
 	Entity(Mesh* mesh); //constructor amb malla
 
 	//metodes
-	void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat
+	void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)
 	void Update(float dt); //actualitza l'entitat
 };
