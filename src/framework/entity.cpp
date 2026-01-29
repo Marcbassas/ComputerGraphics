@@ -24,7 +24,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 			   p.z >= -1.0f && p.z <= 1.0f;
 	};
 
-	//iterar sobre els vertexs de la malla de 3 en 3 (triangles) (2.1.1)
+	//iterar sobre els vertexs de la malla de 3 en 3 (triangles) (2.2.1)
 	for (size_t i = 0; i + 2 < vertices.size(); i += 3) { //size_t perque és un índex, recorre tots els triangles (3 vertexs per triangle)
 		////transformar els vertexs de LOCAL --> WORLD
 		//multipliquem la matriu de modelat per cada vertex del triangle
