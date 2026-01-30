@@ -86,19 +86,55 @@ void Camera::UpdateViewMatrix()
 	view_matrix.SetIdentity();
 
 	// Comment this line to create your own projection matrix!
-	SetExampleViewMatrix();
+	//SetExampleViewMatrix();
 
-	// Remember how to fill a Matrix4x4 (check framework slides)
-	// Careful with the order of matrix multiplications, and be sure to use normalized vectors!
-	
-	// Create the view matrix rotation
-	// ...
-	// view_matrix.M[3][3] = 1.0;
+	//bases de la camera 
+	//camera: eye --> posicio de la camera, center --> on mira, up --> vector vertical de la camara
+	Vector3 z = (eye - center).Normalize(); //endevant (foward) 
+	Vector3 x = up.Cross(z).Normalize(); //dreta --> funcio cross que fa el producte vectorial (up x z) 
+	Vector3 y = z.Cross(x).Normalize(); //adalt --> producte vectorial (z x x)
 
-	// Translate view matrix
-	// ...
+	//matriu de rotacio --> canvia de base
+	//eixos de la camara expressats en coordenades del mon
+	//converteix de coordenades del mon a coordenades de la camara (canvi de base)
+	/*
+	R =
+	| x.x   y.x   z.x   0 |
+	| x.y   y.y   z.y   0 |
+	| x.z   y.z   z.z   0 |
+	|  0     0     0    1 |
 
-	UpdateViewProjectionMatrix();
+	*/
+
+	//matriu de translacio --> mou l'escena en sentit contrari a la camara
+	//matriu que trasllada el mon perque la camara quedi a l'origen
+	//si camera = (eye.x, eye.y, eye.z) --> traslladem el mon = (-eye.x, -eye.y, -eye.z)
+	/*
+	T =
+	| 1   0   0   -eye.x |
+	| 0   1   0   -eye.y |
+	| 0   0   1   -eye.z |
+	| 0   0   0     1    |
+
+	*/
+
+	//matriu final = rotacio * translacio --> view matrix
+	//tres primeres columnes --> eixos de la camara
+	//ultima columna --> traslacio
+	/*
+	| x.x  y.x  z.x  -x·eye |
+	| x.y  y.y  z.y  -y·eye |
+	| x.z  y.z  z.z  -z·eye |
+	| 0    0    0      1    |
+	*/
+
+	//column major  
+	view_matrix.m[0] = x.x;	view_matrix.m[4] = y.x;	view_matrix.m[8] = z.x;	view_matrix.m[12] = -x.Dot(eye); //eix x de la camera
+	view_matrix.m[1] = x.y;	view_matrix.m[5] = y.y;	view_matrix.m[9] = z.y;	view_matrix.m[13] = -y.Dot(eye); //eix y de la camera
+	view_matrix.m[2] = x.z;	view_matrix.m[6] = y.z;	view_matrix.m[10] = z.z;	view_matrix.m[14] = -z.Dot(eye); //eix z de la camera
+	view_matrix.m[3] = 0.0f;	view_matrix.m[7] = 0.0f;	view_matrix.m[11] = 0.0f;	view_matrix.m[15] = 1.0f; //traslacio
+
+	UpdateViewProjectionMatrix(); //per actualitzar la viewprojection matrix 
 }
 
 // Create a projection matrix
@@ -108,19 +144,109 @@ void Camera::UpdateProjectionMatrix()
 	projection_matrix.SetIdentity();
 
 	// Comment this line to create your own projection matrix!
-	SetExampleProjectionMatrix();
+	//SetExampleProjectionMatrix();
 
 	// Remember how to fill a Matrix4x4 (check framework slides)
 	
-	if (type == PERSPECTIVE) {
-		// projection_matrix.M[2][3] = -1;
-		// ...
+	if (type == PERSPECTIVE){ //convertir el fov a radians
+		float fov_rad = fov * (3.14159265f / 180.0f); //conversio a radians
+		float f = 1.0f / tan(fov_rad / 2.0f); //factor d'escalat (zoom)
+
+		//column major --> omplir la matriu de projeccio
+		//x: f /aspect
+		//y: f
+		//matriu
+		//primera ccolumna --> controla la escala en x (f/aspect)
+		//segona columna --> controla la escala en y (f)
+		//tercera columna --> controla la profunditat (z)
+		//quarta columna --> perspectiva
+		/*
+		| f/aspect  0		0				0 |
+		| 0			f		0				0 |
+		| 0			0		(f+n)/(n-f)	   -1 |
+		| 0			0		(2fn)/(n-f)		0 |
+		
+		*/
+		projection_matrix.m[0] = f / aspect; //aspect ratio
+		projection_matrix.m[1] = 0; 
+		projection_matrix.m[2] = 0; 
+		projection_matrix.m[3] = 0;
+
+		projection_matrix.m[4] = 0;
+		projection_matrix.m[5] = f; //fov vertical
+		projection_matrix.m[6] = 0;
+		projection_matrix.m[7] = 0;
+
+		//profuncitat i perspectiva
+		//m[10] i m[14] --> transformacio en z 
+		//m[11] = -1 i m[15] = 0 per perspectiva
+
+		projection_matrix.m[8] = 0;
+		projection_matrix.m[9] = 0;
+		projection_matrix.m[10] = (far_plane + near_plane) / (near_plane - far_plane); 
+		projection_matrix.m[11] = -1.0f;
+
+		projection_matrix.m[12] = 0;
+		projection_matrix.m[13] = 0;
+		projection_matrix.m[14] = (2.0f * far_plane * near_plane) / (near_plane - far_plane);
+		projection_matrix.m[15] = 0.0f;
+
 	}
-	else if (type == ORTHOGRAPHIC) {
-		// ...
+	else if (type == ORTHOGRAPHIC){ //matriu orthogonal 
+		//els objectes no es fan petits amb la distancia
+		//les linies paraleles es mantenen paraleles
+		float l = left;
+		float r = right;
+		float t = top; 
+		float b = bottom; 
+		float n = near_plane; //near --> profunditat minima
+		float f = far_plane; //far --> profunditat maxima
+
+		//convertir de [l,r] a [-1,1] --> x
+		//convertir de [b,t] a [-1,1] --> y
+		//convertir de [n,f] a [-1,1] --> z
+		//openGl te el eix Z cap endavant negatiu
+
+		//ortographic = escala + traslacio
+			/*escala:
+			x: 2 / (r - l)
+			y: 2/(t-b)
+			z: -2/(f-n)
+
+			translacio:
+			x: -(r+l)/(r-l)
+			y: -(t+b)/(t-b)
+			z: -(f+n)/(f-n)
+		
+		matriu:
+		| 2/(r-l)				0					0					0 |
+		|   0					2/(t-b)				0					0 |
+		|   0					0					-2/(f-n)			0 |
+		| -(r+l)/(r-l)			-(t+b)/(t-b)		-(f+n)/(f-n)		1 |
+		*/
+
+		projection_matrix.m[0] = 2.0f / (r - l);
+		projection_matrix.m[1] = 0;
+		projection_matrix.m[2] = 0;
+		projection_matrix.m[3] = 0;
+
+		projection_matrix.m[4] = 0;
+		projection_matrix.m[5] = 2.0f / (t - b);
+		projection_matrix.m[6] = 0;
+		projection_matrix.m[7] = 0;
+
+		projection_matrix.m[8] = 0;
+		projection_matrix.m[9] = 0;
+		projection_matrix.m[10] = -2.0f / (f - n);
+		projection_matrix.m[11] = 0;
+
+		projection_matrix.m[12] = -(r + l) / (r - l);
+		projection_matrix.m[13] = -(t + b) / (t - b);
+		projection_matrix.m[14] = -(f + n) / (f - n);
+		projection_matrix.m[15] = 1.0f;
 	} 
 
-	UpdateViewProjectionMatrix();
+	UpdateViewProjectionMatrix(); //per actualitzar la viewprojection matrix
 }
 
 void Camera::UpdateViewProjectionMatrix()
