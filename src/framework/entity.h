@@ -6,11 +6,14 @@
 
 class Entity {
 public:
+	
 	Mesh* mesh; //punter a la malla
 	Matrix44 model; //matriu de modelat
 
 	Entity(); //constructor
 	Entity(Mesh* mesh); //constructor amb malla
+	
+	float time;
 
 	//metodes
 	void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)

@@ -67,6 +67,23 @@ void Application::Init(void) { //inicialitza l'aplicació
 	preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
 
 	rain.Init(window_width, window_height); //2.3 --> inicialitzar la pluja
+
+	//LAB2
+	// 1. Carreguem la malla (una sola vegada per estalviar memòria!)
+	Mesh* m = new Mesh();
+	m->LoadOBJ("meshes/lee.obj");
+
+	// 2. Creem 3 entitats i les fiquem al vector
+	for (int i = 0; i < 3; i++) {
+		Entity* ent = new Entity(m);
+		// MakeTranslationMatrix reinicia la matriu i posa la posició
+		ent->model.MakeTranslationMatrix((i - 1) * 15.0f, 0.0f, 0.0f);
+		entities.push_back(ent);
+	}
+	camera = new Camera();
+	// Eye (on estàs), Center (on mires), Up (quin eix és el cel)
+	camera->LookAt(Vector3(0, 10, 20), Vector3(0, 0, 0), Vector3(0, 1, 0));
+	camera->SetPerspective(45, window_width / (float)window_height, 0.1, 1000);
 }
 
 
@@ -114,6 +131,11 @@ void Application::Render(void) { //renderitza l'aplicació
 	if (current_mode == 2) { //si estem en mode 2 (animació)
 		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
 		rain.Render(&framebuffer);   //dibuixar gotes
+		// LAB2: Dibuixar les 3 entitats ---
+		for (Entity* ent : entities) {
+			// Passem la càmera i un color (per exemple, Blanc)
+			ent->Render(&framebuffer, camera, Color::WHITE);
+		}
 		framebuffer.Render();   //mostrar framebuffer a la finestra
 		return;     //SORTIM (no dibuixem res més)
 	}
@@ -164,9 +186,16 @@ void Application::Render(void) { //renderitza l'aplicació
 // Called after render
 //actualittza l'aplicacio en funcio del temps que ha passat
 void Application::Update(float seconds_elapsed){
+	// Actualitzem el temps global de l'aplicació (molt útil per a sinus/cosinus)
+	this->time += seconds_elapsed;
+
 	//si el mode actual és 2 (animació) --> actualitzar la pluja
 	if (current_mode == 2) {
 		rain.Update(seconds_elapsed, window_width, window_height); //update(temps, amplada finestra, altura finestra)
+		// 2. Actualitzar les entitats 3D (Nou per al punt 2.4)
+		for (int i = 0; i < entities.size(); ++i) {
+			entities[i]->Update(seconds_elapsed);
+		}
 	}
 }
 

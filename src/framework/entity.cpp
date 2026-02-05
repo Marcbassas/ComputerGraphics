@@ -1,4 +1,5 @@
 #include "entity.h"
+#include <cmath> // Necessari per sin i cos
 
 Entity::Entity(){
 	model.SetIdentity();
@@ -7,10 +8,40 @@ Entity::Entity(){
 Entity::Entity(Mesh* mesh) { //constructor amb malla
 	this->mesh = mesh; //punter a la malla
 	model.SetIdentity();
+	this->time = 0.0f;
 }
 
-void Entity :: Update(float dt){
-	//
+void Entity::Update(float seconds_elapsed) {
+	// 1. ACUMULEM EL TEMPS (Això és la clau!)
+	this->time += seconds_elapsed;
+
+	// Ara fem servir 'this->time' en lloc de 'seconds_elapsed' per als càlculs
+	float rotation_speed = 2.0f; // Velocitat de gir
+	float angle = this->time * rotation_speed;
+
+	float animation_speed = this->time * 3.0f; // Velocitat del batec
+	float s = 1.0f + sin(animation_speed) * 0.1f;
+	float y_pos = sin(animation_speed) * 2.0f;
+
+	// 2. MATRIUS (Igual que abans)
+	Matrix44 m_scale;
+	m_scale.MakeScaleMatrix(s, s, s);
+
+	Matrix44 m_rotation;
+	// Ara 'angle' va creixent constantment, així que girarà
+	m_rotation.MakeRotationMatrix(angle, Vector3(0, 1, 0));
+
+	// Correcció de l'eix (la que hem fet abans)
+	Matrix44 m_fix;
+	m_fix.MakeRotationMatrix(3.14159f, Vector3(0, 0, 1)); // O l'eix que t'hagi funcionat
+
+	// Translació
+	float current_x = model.m[12];
+	Matrix44 m_translation;
+	m_translation.MakeTranslationMatrix(current_x, y_pos, 0.0f);
+
+	// 3. COMBINACIÓ
+	model = m_translation * m_rotation * m_fix * m_scale;
 }
 
 void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {

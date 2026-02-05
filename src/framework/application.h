@@ -2,7 +2,8 @@
 	+ This class encapsulates the application, is in charge of creating the data, getting the user input, process the update and render.
 */
 #pragma once
-
+#include "entity.h" //LAB 2
+#include <vector>
 #include "main/includes.h"
 #include "framework.h"
 #include "image.h"
@@ -182,4 +183,10 @@ public:
 		SDL_GetWindowSize(window,&w,&h);
 		return Vector2(float(w), float(h));
 	}
+
+	// 2. Declara la càmera (molt important, t'està donant error perquè falta)
+	Camera* camera;
+
+	// 3. El vector d'entitats
+	std::vector<Entity*> entities;
 };
