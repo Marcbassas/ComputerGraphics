@@ -127,6 +127,10 @@ void Application::Render(void) {
 }
 */
 void Application::Render(void) { //renderitza l'aplicació
+	// LAB 2 2.5. Configurem la Càmera a cada frame perquè respongui als canvis
+	camera->SetPerspective(camera->fov, window_width / (float)window_height, camera->near_plane, camera->far_plane);
+	camera->LookAt(camera->eye, camera->center, camera->up);
+
 //---ANIMACIÓ DE PARTÍCULES---
 	if (current_mode == 2) { //si estem en mode 2 (animació)
 		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
@@ -310,31 +314,110 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 
 
 
-void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
-	Vector2 mouse(event.x, window_height - event.y); //convertir coordenades del ratolí
-	current_pos = mouse; //actualitzar la posició actual del ratolí
+void Application::OnMouseMove(SDL_MouseButtonEvent event)
+{
+	// Calculem xrel i yrel 
+	// Hem de calcular la distància que s'ha mogut el ratolí comparant amb l'últim frame.
+	static int last_x = event.x;
+	static int last_y = event.y;
 
-	if (is_drawing) { //si s'està dibuixant
-		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma, sinó el color actual)
+	int xrel = event.x - last_x;
+	int yrel = event.y - last_y;
 
-		switch (current_tool) {
-		case TOOL_PENCIL: //llapis
-		case TOOL_ERASER: //goma
-			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color); //dibuixar línia des de la posició inicial fins a la actual
-			start_pos = current_pos; //actualitzar la posició inicial a la actual
-			break;
-		default: 
-			break; //no fer res
+	last_x = event.x; // Actualitzem per la pròxima vegada
+	last_y = event.y;
+
+	// MODE 1: PAINT
+
+	if (current_mode == 1)
+	{
+		Vector2 mouse(event.x, window_height - event.y);
+		current_pos = mouse;
+
+		if (is_drawing) {
+			Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+
+			switch (current_tool) {
+			case TOOL_PENCIL:
+			case TOOL_ERASER:
+				framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
+				start_pos = current_pos;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	// MODE 2: CÀMERA 
+	else if (current_mode == 2)
+	{
+		// Fem servir SDL_GetMouseState per saber si el botó està premut mentre movem
+		int mx, my;
+		Uint32 buttons = SDL_GetMouseState(&mx, &my);
+
+		// Si el botó esquerre està premut, girem la càmera
+		if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
+		{
+			float sensitivity = 0.01f; // Ajusta la velocitat aquí
+
+			// 1. Obtenim el vector de visió
+			Vector3 view = camera->eye - camera->center;
+
+			// 2. Rotació Horitzontal (Eix Y)
+			Matrix44 rot_y;
+			rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0));
+			view = rot_y.RotateVector(view);
+
+			// 3. Rotació Vertical (Eix local)
+			// Calculem l'eix "dreta" de la càmera per saber com pujar/baixar
+			Vector3 right = view.Cross(camera->up).Normalize();
+			Matrix44 rot_x;
+			rot_x.MakeRotationMatrix(-yrel * sensitivity, right);
+			view = rot_x.RotateVector(view);
+
+			// 4. Actualitzem la càmera
+			camera->eye = camera->center + view;
+		}
+		// BOTÓ DRET (PANNING)
+		else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
+		{
+			// 1. Calculem els vectors de la càmera per saber on és "dreta" i "dalt"
+			Vector3 front = (camera->center - camera->eye).Normalize();
+			Vector3 right = front.Cross(camera->up).Normalize();
+			Vector3 top = right.Cross(front).Normalize();
+
+			// 2. Velocitat (depèn de la distància per ser més natural)
+			float speed = 0.01f * camera->eye.Distance(camera->center);
+
+			// 3. Calculem el desplaçament lateral
+			// xrel mou en l'eix 'right', yrel mou en l'eix 'top'
+			Vector3 movement = (right * -xrel * speed) + (top * yrel * speed);
+
+			// 4. Apliquem el moviment a l'ULL i al CENTRE
+			camera->eye = camera->eye + movement;
+			camera->center = camera->center + movement;
 		}
 	}
 }
 
 
-void Application::OnWheel(SDL_MouseWheelEvent event)//detecta scroll del ratoli --> zoom in/out
+void Application::OnWheel(SDL_MouseWheelEvent event) //detecta scroll del ratoli
 {
 	float dy = event.preciseY;
 
-	// ...
+	if (current_mode == 2) // Només en mode 3D
+	{
+		float zoom_speed = 0.05f; // Velocitat (si va molt ràpid, posa 0.01f)
+
+		// 1. Calculem el vector de direcció (la línia on estem mirant)
+		Vector3 view_vector = camera->center - camera->eye;
+
+		// 2. Movem el eye al llarg d'aquesta línia
+		//    Si dy és positiu (rodeta amunt), sumem vector -> ens apropem
+		//    Si dy és negatiu (rodeta avall), restem vector -> ens allunyem
+		camera->eye = camera->eye + (view_vector * dy * zoom_speed);
+	}
 }
 
 void Application::OnFileChanged(const char* filename)//detecta canvi en un fitxer
