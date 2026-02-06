@@ -126,8 +126,8 @@ public:
 	ToolType current_tool = TOOL_PENCIL; // Eina per defecte
 	Color current_color = Color::BLACK;  // Color per defecte
 
-	//modes
-	int current_mode = 1;      // 1 = Paint, 2 = Animation
+    //modes
+    int current_mode = 1;      // 1 = Single entity, 2 = Multiple animated entities (0 = Paint mode)
 	bool fill_shapes = false;  // F = toggle
 	int border_width = 1;      // + / -
 
@@ -175,6 +175,11 @@ public:
 		this->window_height = height;
 		this->framebuffer.Resize(width, height);
 		this->preview_framebuffer.Resize(width, height);
+		// Actualitzar aspect ratio de la càmera per evitar deformacions en redimensionar
+		if (camera) {
+			// Recalcular la perspectiva amb el nou aspect ratio
+			camera->SetPerspective(camera->fov, width / (float)height, camera->near_plane, camera->far_plane);
+		}
 	}
 
 	Vector2 GetWindowSize()
@@ -186,6 +191,10 @@ public:
 
 	// 2. Declara la càmera (molt important, t'està donant error perquè falta)
 	Camera* camera;
+
+	// 2.5 -> quina propietat de la camera estem modificant (NEAR/FAR/FOV)
+	enum CameraProperty { CAM_NONE = -1, CAM_NEAR = 0, CAM_FAR = 1, CAM_FOV = 2 };
+	CameraProperty current_camera_property = CAM_NONE; // per defecte no modifiquem cap propietat
 
 	// 3. El vector d'entitats
 	std::vector<Entity*> entities;

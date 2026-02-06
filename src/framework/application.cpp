@@ -3,20 +3,19 @@
 #include "shader.h"
 #include "utils.h" 
 
-Application::Application(const char* caption, int width, int height)
-{
-	this->window = createWindow(caption, width, height); 
+Application::Application(const char* caption, int width, int height) { //constructor de la classe application, crea la finestra i inicialitza les variables
+	this->window = createWindow(caption, width, height);
 
-	int w,h;
+	int w,h; 
 	SDL_GetWindowSize(window,&w,&h);
 
-	this->mouse_state = 0;
-	this->time = 0.f;
-	this->window_width = w;
-	this->window_height = h;
-	this->keystate = SDL_GetKeyboardState(nullptr);
+	this->mouse_state = 0; //inicialitzar mouse state = 0 (cap botó premut)
+	this->time = 0.f; //inicialitzar temps = 0
+	this->window_width = w; //inicialitzar amplada finestra
+	this->window_height = h; //inicialitzar altura finestra
+	this->keystate = SDL_GetKeyboardState(nullptr); //obtenir estat teclat 
 
-	this->framebuffer.Resize(w, h);
+	this->framebuffer.Resize(w, h);//inicialitzar framebuffer amb dimensions de la finestra
 }
 
 Application::~Application(){ 
@@ -25,127 +24,121 @@ Application::~Application(){
 void Application::Init(void) { //inicialitza l'aplicació
 	std::cout << "Initiating app..." << std::endl;
 
-	//carregar icones
-	Image pencil_img;  pencil_img.LoadPNG("images/pencil.png");
-	Image line_img;    line_img.LoadPNG("images/line.png");
-	Image rect_img;    rect_img.LoadPNG("images/rectangle.png");
-	Image tri_img;     tri_img.LoadPNG("images/triangle.png");
-	Image eraser_img;  eraser_img.LoadPNG("images/eraser.png");
-	Image clear_img;   clear_img.LoadPNG("images/clear.png");
-	Image load_img;    load_img.LoadPNG("images/load.png");
-	Image save_img;    save_img.LoadPNG("images/save.png");
-	Image red_img;     red_img.LoadPNG("images/red.png");
-	Image green_img;   green_img.LoadPNG("images/green.png");
-	Image blue_img;    blue_img.LoadPNG("images/blue.png");
+    //--------------------LAB1-----------------------
+    /*
+    //carregar icones
+    Image pencil_img;  pencil_img.LoadPNG("images/pencil.png");
+    Image line_img;    line_img.LoadPNG("images/line.png");
+    Image rect_img;    rect_img.LoadPNG("images/rectangle.png");
+    Image tri_img;     tri_img.LoadPNG("images/triangle.png");
+    Image eraser_img;  eraser_img.LoadPNG("images/eraser.png");
+    Image clear_img;   clear_img.LoadPNG("images/clear.png");
+    Image load_img;    load_img.LoadPNG("images/load.png");
+    Image save_img;    save_img.LoadPNG("images/save.png");
+    Image red_img;     red_img.LoadPNG("images/red.png");
+    Image green_img;   green_img.LoadPNG("images/green.png");
+    Image blue_img;    blue_img.LoadPNG("images/blue.png");
 
-	int x = 10; //posició fixa
-	int y = 10; //posició inicial
-	int sep = 5; //separació entre botons
+    int x = 10; //posició fixa
+    int y = 10; //posició inicial
+    int sep = 5; //separació entre botons
 
-	//EINES --> Button(icona, posició, tipus)
-	buttons.push_back(Button(pencil_img, Vector2(x, y), BUTTON_PENCIL)); y += pencil_img.height + sep; //llapis
-	buttons.push_back(Button(line_img, Vector2(x, y), BUTTON_LINE));   y += line_img.height + sep; //línia
-	buttons.push_back(Button(rect_img, Vector2(x, y), BUTTON_RECT));   y += rect_img.height + sep; //rectangle
-	buttons.push_back(Button(tri_img, Vector2(x, y), BUTTON_TRIANGLE)); y += tri_img.height + sep; //triangle
-	buttons.push_back(Button(eraser_img, Vector2(x, y), BUTTON_ERASER)); y += eraser_img.height + sep; //goma
+    //EINES --> Button(icona, posició, tipus)
+    buttons.push_back(Button(pencil_img, Vector2(x, y), BUTTON_PENCIL)); y += pencil_img.height + sep; //llapis
+    buttons.push_back(Button(line_img, Vector2(x, y), BUTTON_LINE));   y += line_img.height + sep; //línia
+    buttons.push_back(Button(rect_img, Vector2(x, y), BUTTON_RECT));   y += rect_img.height + sep; //rectangle
+    buttons.push_back(Button(tri_img, Vector2(x, y), BUTTON_TRIANGLE)); y += tri_img.height + sep; //triangle
+    buttons.push_back(Button(eraser_img, Vector2(x, y), BUTTON_ERASER)); y += eraser_img.height + sep; //goma
 
-	y += 10; //separació entre grups
+    y += 10; //separació entre grups
 
-	//COLORS
-	buttons.push_back(Button(red_img, Vector2(x, y), BUTTON_COLOR_RED));   y += red_img.height + sep; //boto color vermell
-	buttons.push_back(Button(green_img, Vector2(x, y), BUTTON_COLOR_GREEN)); y += green_img.height + sep; //boto color verd
-	buttons.push_back(Button(blue_img, Vector2(x, y), BUTTON_COLOR_BLUE));  y += blue_img.height + sep; //boto color blau
+    //COLORS
+    buttons.push_back(Button(red_img, Vector2(x, y), BUTTON_COLOR_RED));   y += red_img.height + sep; //boto color vermell
+    buttons.push_back(Button(green_img, Vector2(x, y), BUTTON_COLOR_GREEN)); y += green_img.height + sep; //boto color verd
+    buttons.push_back(Button(blue_img, Vector2(x, y), BUTTON_COLOR_BLUE));  y += blue_img.height + sep; //boto color blau
 
-	y += 10; // separació entre grups
+    y += 10; // separació entre grups
 
-	// ACCIONS
-	buttons.push_back(Button(clear_img, Vector2(x, y), BUTTON_CLEAR)); y += clear_img.height + sep; //boto netejar
-	buttons.push_back(Button(load_img, Vector2(x, y), BUTTON_LOAD));  y += load_img.height + sep; //boto carregar
-	buttons.push_back(Button(save_img, Vector2(x, y), BUTTON_SAVE)); //boto desar
+    // ACCIONS
+    buttons.push_back(Button(clear_img, Vector2(x, y), BUTTON_CLEAR)); y += clear_img.height + sep; //boto netejar
+    buttons.push_back(Button(load_img, Vector2(x, y), BUTTON_LOAD));  y += load_img.height + sep; //boto carregar
+    buttons.push_back(Button(save_img, Vector2(x, y), BUTTON_SAVE)); //boto desar
 
-	framebuffer.Fill(Color::WHITE); //inicialitzar el framebuffer a blanc
-	preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
+    framebuffer.Fill(Color::BLACK); //inicialitzar el framebuffer a negre per al LAB 2
+    preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
+    */
 
-	rain.Init(window_width, window_height); //2.3 --> inicialitzar la pluja
 
-	//LAB2
-	// 1. Carreguem la malla (una sola vegada per estalviar memòria!)
-	Mesh* m = new Mesh();
-	m->LoadOBJ("meshes/lee.obj");
 
-	// 2. Creem 3 entitats i les fiquem al vector
-	for (int i = 0; i < 3; i++) {
-		Entity* ent = new Entity(m);
-		// MakeTranslationMatrix reinicia la matriu i posa la posició
-		ent->model.MakeTranslationMatrix((i - 1) * 15.0f, 0.0f, 0.0f);
-		entities.push_back(ent);
-	}
-	camera = new Camera();
-	// Eye (on estàs), Center (on mires), Up (quin eix és el cel)
-	camera->LookAt(Vector3(0, 10, 20), Vector3(0, 0, 0), Vector3(0, 1, 0));
-	camera->SetPerspective(45, window_width / (float)window_height, 0.1, 1000);
+	//--------------------LAB2-----------------------
+	//INICIALITZACIO DE LA MALLA, ENTITATS I CÀMERA
+	Mesh* m = new Mesh(); //crear nova malla
+	m->LoadOBJ("meshes/lee.obj"); //carregar malla de lee (2.4)
+
+    //crear les 3 entitats amb la malla carregada i posar-les a diferents posicions
+	for (int i = 0; i < 3; i++) {// i < x --> x = número d'entitats a crear
+        Entity* ent = new Entity(m); //crear entitat amb la malla carregada
+
+		//inicialitzar la matriu de model per a cada entitat: translació + rotació + escala
+		Matrix44 m_trans; m_trans.MakeTranslationMatrix((i - 1) * 6.0f, 0.0f, 0.0f); //matriu de translació --> per separar les entitats (posar a -6, 0, 0), (0, 0, 0) i (6, 0, 0)
+		Matrix44 m_rot; m_rot.MakeRotationMatrix(3.14159f, Vector3(1, 0, 0)); //matriu de rotació --> per posar la malla dreta (rotar 180 graus al voltant de l'eix X)
+		Matrix44 m_scale; //matriu d'escala --> per veure millor les malles 
+
+		float scale_factor = 3.0f; //factor d'escala per a les entitats --> (sx, sy, sz) = (3, 3, 3)
+		m_scale.MakeScaleMatrix(scale_factor, scale_factor, scale_factor); //matriu d'escala amb el factor d'escala (sx, sy, sz)
+
+        // Ordre: Model = Translation * Rotation * Scale (T * R * S)
+		ent->model = m_trans * m_rot * m_scale; //matriu de modelat = translació * rotació * escala
+
+        ent->time = i * 1.0f; //desfasament temporal per variar animacions
+        entities.push_back(ent); //afegir l'entitat al vector d'entitats per a que es renderitzi després 
+    }
+	camera = new Camera(); //nova càmera
+    // Eye (on estàs), Center (on mires), Up (quin eix és el cel)
+
+	//camera LOOKAT: posició de la càmera, punt al que mira i vector up
+	camera->LookAt(Vector3(0, 5, 12), Vector3(0, 0, 0), Vector3(0, 1, 0)); //posició inicial de la càmera
+
+	//camera PERSPECTIVE: fov, aspect ratio, planol daprop, planol llunya
+	camera->SetPerspective(60, window_width / (float)window_height, 0.1f, 900.0f); //projecció inicial de la càmera
 }
 
-
-/*
-// Render one frame
-//pinta el framebuffer a la finestra
-void Application::Render(void) {
-	//prova del DrawLineDDA
-	framebuffer.Fill(Color::BLACK);
-	//centre de la finestra
-	int x = window_width / 2;
-	int y = window_height / 2;
-	Color color = Color::WHITE; //escollir color blanc
-	framebuffer.DrawLineDDA(x, y, x + 100 * cos(time), y + 100 * sin(time), color);
-	framebuffer.Render();
-}
-*/
-
-/*
-//Render Triangle 2.1.3
-void Application::Render(void) {
-	/*
-	// 1. Netejar la pantalla
-	framebuffer.Fill(Color::BLACK);
-
-	// 2. Definim 3 punts quiets:	
-	Vector2 p0(400, 100); // Punt de dalt (centre)
-	Vector2 p1(200, 450); // Punt de baix esquerra
-	Vector2 p2(600, 450); // Punt de baix dreta
-
-	// 3. Dibuixem el triangle estàtic
-	framebuffer.DrawTriangle(p0, p1, p2, Color::WHITE, true, Color::RED);
-
-	// 4. Mostrar a la finestra
-	framebuffer.Render();
-	
-	framebuffer.Fill(Color::WHITE); // Dibuixar botons 
-	for (auto& b : buttons) 
-		b.Render(framebuffer); 
-	framebuffer.Render();
-}
-*/
 void Application::Render(void) { //renderitza l'aplicació
-	// LAB 2 2.5. Configurem la Càmera a cada frame perquè respongui als canvis
+	
+	//camera SETPERSPECTIVE: fov, aspect ratio, planol daprop, planol llunya
 	camera->SetPerspective(camera->fov, window_width / (float)window_height, camera->near_plane, camera->far_plane);
+
+	//camera LOOKAT: posició de la càmera, punt al que mira i vector up
 	camera->LookAt(camera->eye, camera->center, camera->up);
 
-//---ANIMACIÓ DE PARTÍCULES---
-	if (current_mode == 2) { //si estem en mode 2 (animació)
+	//MODE 2: dibuixar VARIES ENTITATS animades (mode d'animació)
+	if (current_mode == 2) { 
 		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
-		rain.Render(&framebuffer);   //dibuixar gotes
-		// LAB2: Dibuixar les 3 entitats ---
-		for (Entity* ent : entities) {
-			// Passem la càmera i un color (per exemple, Blanc)
-			ent->Render(&framebuffer, camera, Color::WHITE);
-		}
-		framebuffer.Render();   //mostrar framebuffer a la finestra
-		return;     //SORTIM (no dibuixem res més)
+        for (size_t i = 0; i < entities.size(); ++i) { //dibuixar les 3 entitats 
+            //colors de les entitats: blau, verd, vermell
+            Color col = Color::WHITE;
+			if (i % 3 == 0) col = Color::BLUE; //entitat 0 = blau
+			else if (i % 3 == 1) col = Color::GREEN; //entitat 1 = verd
+			else if (i % 3 == 2) col = Color::RED; //entitat 2 = vermell
+            entities[i]->Render(&framebuffer, camera, col); //renderitzar l'entitat al framebuffer amb la càmera i color
+        }
+		framebuffer.Render();//mostrar framebuffer a la finestra
+		return;//SORTIR
 	}
 
-	//codi del paint
-	preview_framebuffer = framebuffer; //copiar el framebuffer al de previsualització
+    //MODE 1: dibuixar UNA SOLA ENTITAT (sense animació)
+	else if (current_mode == 1) { 
+		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
+		if (!entities.empty()) { //comprovar que hi ha entitats carregades
+			// dibuixar només la primera entitat
+			entities[0]->Render(&framebuffer, camera, Color::WHITE); //renderitzar l'entitat al framebuffer amb la càmera i color blanc
+		}
+		framebuffer.Render(); //mostrar framebuffer a la finestra
+		return; //SORTIR
+	}
+
+	//-----------------LAB1: EINA DE DIBUIX---------------------------
+	/*preview_framebuffer = framebuffer; //copiar el framebuffer al de previsualització
 
 	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y)) { //si s'està dibuixant i la posició inicial és diferent de l'actual
 		Color preview = Color(0.0f, 0.0f, 0.0f); //color de previsualització
@@ -181,156 +174,234 @@ void Application::Render(void) { //renderitza l'aplicació
 		b.Render(preview_framebuffer); //dibuixar botó al framebuffer de previsualització
 
 	preview_framebuffer.Render(); //mostrar el framebuffer de previsualització a la finestra
+    */
 }
 
-
-
-
-
-// Called after render
 //actualittza l'aplicacio en funcio del temps que ha passat
 void Application::Update(float seconds_elapsed){
-	// Actualitzem el temps global de l'aplicació (molt útil per a sinus/cosinus)
-	this->time += seconds_elapsed;
+	this->time += seconds_elapsed; //incrementar temps global amb el temps transcorregut des de l'última actualització
 
-	//si el mode actual és 2 (animació) --> actualitzar la pluja
-	if (current_mode == 2) {
-		rain.Update(seconds_elapsed, window_width, window_height); //update(temps, amplada finestra, altura finestra)
-		// 2. Actualitzar les entitats 3D (Nou per al punt 2.4)
-		for (int i = 0; i < entities.size(); ++i) {
-			entities[i]->Update(seconds_elapsed);
+	if (current_mode == 2) { //si estem en mode d'animació
+		//LAB1: actualitzar la pluja
+		//rain.Update(seconds_elapsed, window_width, window_height); //update(temps, amplada finestra, altura finestra)
+		
+        //LAB2: Actualitzar les entitats 3D 
+		for (int i = 0; i < entities.size(); ++i) { //per cada entitat
+			entities[i]->Update(seconds_elapsed); //actualitzar l'entitat amb el temps transcorregut des de l'última actualització per animar les entitats
 		}
 	}
 }
 
-//keyboard press event 
-void Application::OnKeyPressed(SDL_KeyboardEvent event)//detecta tecla premuda 
-{
-	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
-	switch(event.keysym.sym) {
 
-		case SDLK_ESCAPE: exit(0); break; // ESC key, kill the app
-		//1 --> paint mode
-		case SDLK_1: 
-			current_mode = 1; 
-			std::cout << "Paint mode" << std::endl; 
-			break;
 
-		//2 --> animation mode
-		case SDLK_2: 
-			current_mode = 2; 
-			std::cout << "Animation mode" << std::endl; 
-			break;
+void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
+    // KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
 
-		//F --> toggle fill shapes
-		case SDLK_f:
-			fill_shapes = !fill_shapes; 
-			std::cout << "Fill shapes: " << (fill_shapes ? "ON" : "OFF") << std::endl; 
-			break;
+    switch (event.keysym.sym) {
 
-		//+ --> increase border width
-		case SDLK_PLUS:
-		case SDLK_EQUALS: //perquè el + està al mateix botó que =
-			border_width++;
-			std::cout << "Border width: " << border_width << std::endl;
-			break;
+	case SDLK_ESCAPE: // ESC: sortir de aplicació
+        exit(0);
+        break;
 
-		//- --> decrease border width
-		case SDLK_MINUS:
-			border_width--;
-			std::cout << "Border width: " << border_width << std::endl;
-			break;
-	}
+	case SDLK_1: //mode 1 = una sola entitat sense animació
+        current_mode = 1;
+        std::cout << "Single entity mode" << std::endl;
+        break;
+
+	case SDLK_2: //mode 2 = múltiples entitats animades
+        current_mode = 2;
+        std::cout << "Multiple animated entities mode" << std::endl;
+        break;
+
+	case SDLK_n: //N = near 
+        current_camera_property = CAM_NEAR;
+        std::cout << "Camera property: NEAR" << std::endl;
+        break;
+
+	case SDLK_f: //F = far
+        current_camera_property = CAM_FAR;
+        std::cout << "Camera property: FAR" << std::endl;
+        break;
+
+	case SDLK_v: //FOV = camp de visió
+        current_camera_property = CAM_FOV;
+        std::cout << "Camera property: FOV" << std::endl;
+        break;
+
+    //AUGMENTAR 
+    case SDLK_PLUS: // +
+	case SDLK_EQUALS: //tecla + sense shift
+	case SDLK_KP_PLUS: //tecla + del teclaT numéric
+    {
+		if (current_camera_property == CAM_NONE) //si no s'ha seleccionat cap propietat de la càmera, no fer res
+            break;
+
+        switch (current_camera_property) {
+
+		case CAM_NEAR: //augmentar el planol de prop de la càmera
+            camera->near_plane += 0.01f * camera->near_plane + 0.01f;
+            if (camera->near_plane < 0.001f)
+                camera->near_plane = 0.001f;
+            if (camera->near_plane > camera->far_plane - 0.01f)
+                camera->near_plane = camera->far_plane - 0.01f;
+			std::cout << "Camera near: " << camera->near_plane << std::endl; //missatge del nou planol de prop
+            break;
+
+		case CAM_FAR: //augmentar el planol de lluny de la càmera
+            camera->far_plane += 10.0f;
+			std::cout << "Camera far: " << camera->far_plane << std::endl; //missatge del nou planol de lluny
+            break;
+
+		case CAM_FOV: //augmentar el camp de visió de la càmera
+            camera->fov += 1.0f;
+            if (camera->fov > 179.0f)
+                camera->fov = 179.0f;
+			std::cout << "Camera fov: " << camera->fov << std::endl; //missatge de la nova FOV
+            break;
+
+        default:
+            break;
+        }
+
+		camera->UpdateProjectionMatrix(); //actualitzar la matriu de projecció de la càmera amb les noves propietats
+        break;
+    }
+
+    //DISMINUIR 
+	case SDLK_MINUS: // -
+	case SDLK_KP_MINUS: //tecla - del teclat numéric
+    {
+		if (current_camera_property == CAM_NONE) //si no s'ha seleccionat cap propietat de la càmera, no fer res
+            break;
+
+        switch (current_camera_property) {
+
+		case CAM_NEAR: //disminuir el planol de prop de la càmera
+            camera->near_plane -= 0.01f * camera->near_plane + 0.01f;
+            if (camera->near_plane < 0.001f)
+                camera->near_plane = 0.001f;
+            if (camera->near_plane > camera->far_plane - 0.01f)
+                camera->near_plane = camera->far_plane - 0.01f;
+			std::cout << "Camera near: " << camera->near_plane << std::endl; //missatge del nou planol de prop
+            break;
+
+		case CAM_FAR: //disminuir el planol de lluny de la càmera
+            camera->far_plane -= 10.0f;
+            if (camera->far_plane < camera->near_plane + 1.0f)
+                camera->far_plane = camera->near_plane + 1.0f;
+			std::cout << "Camera far: " << camera->far_plane << std::endl; //missatge del nou planol de lluny
+            break;
+
+		case CAM_FOV: //disminuir el camp de visió de la càmera
+            camera->fov -= 1.0f;
+            if (camera->fov < 1.0f)
+                camera->fov = 1.0f;
+			std::cout << "Camera fov: " << camera->fov << std::endl; //missatge de la nova FOV
+            break;
+
+        default:
+            break;
+        }
+
+		camera->UpdateProjectionMatrix(); //actualitzar la matriu de projecció de la càmera amb les noves propietats
+        break;
+    }
+    }
 }
+
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (PRESS)
-	if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
-		Vector2 mouse(event.x, window_height - event.y); 
-		for (auto& b : buttons) { //recorre=er tots els botons
-			if (b.IsMouseInside(mouse)) {
-				//reset de preview per evitar figures fantasma
-				is_drawing = false; //indicar que no s'està dibuixant
-				start_pos = Vector2(-1, -1); //posició inicial fora de la pantalla
-				current_pos = Vector2(-1, -1); //posició actual fora de la pantalla
-				switch (b.type) { //tipus de botó
-				case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break; 
-				case BUTTON_LINE: current_tool = TOOL_LINE; break;
-				case BUTTON_RECT: current_tool = TOOL_RECT; break;
-				case BUTTON_TRIANGLE: current_tool = TOOL_TRIANGLE; break;
-				case BUTTON_ERASER: current_tool = TOOL_ERASER; break;
+	
+	//LAB1 - Només processar l'inici de dibuix si estem en mode Paint (mode 0)
+    /*if (current_mode == 0) {
+        if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
+            Vector2 mouse(event.x, window_height - event.y); 
+            for (auto& b : buttons) { //recorre=er tots els botons
+                if (b.IsMouseInside(mouse)) {
+                    //reset de preview per evitar figures fantasma
+                    is_drawing = false; //indicar que no s'està dibuixant
+                    start_pos = Vector2(-1, -1); //posició inicial fora de la pantalla
+                    current_pos = Vector2(-1, -1); //posició actual fora de la pantalla
+                    switch (b.type) { //tipus de botó
+                    case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break; 
+                    case BUTTON_LINE: current_tool = TOOL_LINE; break;
+                    case BUTTON_RECT: current_tool = TOOL_RECT; break;
+                    case BUTTON_TRIANGLE: current_tool = TOOL_TRIANGLE; break;
+                    case BUTTON_ERASER: current_tool = TOOL_ERASER; break;
 
-				case BUTTON_COLOR_RED: current_color = Color::RED; break;
-				case BUTTON_COLOR_GREEN: current_color = Color::GREEN; break;
-				case BUTTON_COLOR_BLUE: current_color = Color::BLUE; break;
+                    case BUTTON_COLOR_RED: current_color = Color::RED; break;
+                    case BUTTON_COLOR_GREEN: current_color = Color::GREEN; break;
+                    case BUTTON_COLOR_BLUE: current_color = Color::BLUE; break;
 
-				case BUTTON_CLEAR: framebuffer.Fill(Color::WHITE); break;
-				case BUTTON_LOAD: framebuffer.LoadPNG("images/fruits.png"); break;
-				case BUTTON_SAVE: framebuffer.SaveTGA("output.tga"); break;
-				}
-				return;
-			}
+                    case BUTTON_CLEAR: framebuffer.Fill(Color::WHITE); break;
+                    case BUTTON_LOAD: framebuffer.LoadPNG("images/fruits.png"); break;
+                    case BUTTON_SAVE: framebuffer.SaveTGA("output.tga"); break;
+                    }
+                    return;
+                }
 
 
-		}
+            }
 
-		//si no ha clicat cap botó → comencem a dibuixar
-		is_drawing = true; //indicar que s'està dibuixant
-		start_pos = mouse; //guardar la posició inicial del ratolí
-		current_pos = mouse; //guardar la posició actual del ratolí
-	}
+            //si no ha clicat cap botó → comencem a dibuixar
+            is_drawing = true; //indicar que s'està dibuixant
+            start_pos = mouse; //guardar la posició inicial del ratolí
+            current_pos = mouse; //guardar la posició actual del ratolí
+        }
+    }
+	*/
 }
 
 
 void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (RELEASE)
-	if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
-		is_drawing = false; //indicar que s'ha deixat de dibuixar
+	//LAB1 - Només processar el final del dibuix si estem en mode Paint (mode 0)
+    /*if (current_mode == 0) {
+        if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
+            is_drawing = false; //indicar que s'ha deixat de dibuixar
 
-		Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma, sinó el color actual)
+            Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma, sinó el color actual)
 
-		switch (current_tool) { //eina actual
-		case TOOL_LINE: //línia
-			framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
-			break;
+            switch (current_tool) { //eina actual
+            case TOOL_LINE: //línia
+                framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
+                break;
 
-		case TOOL_RECT: { //rectangle --> variables per a les dimensions(4)
-			int x = std::min(start_pos.x, current_pos.x);
-			int y = std::min(start_pos.y, current_pos.y);
-			int w = std::abs(current_pos.x - start_pos.x);
-			int h = std::abs(current_pos.y - start_pos.y);
-			framebuffer.DrawRect(x, y, w, h, draw_color, border_width, fill_shapes, draw_color);
-			break;
-		}
+            case TOOL_RECT: { //rectangle --> variables per a les dimensions(4)
+                int x = std::min(start_pos.x, current_pos.x);
+                int y = std::min(start_pos.y, current_pos.y);
+                int w = std::abs(current_pos.x - start_pos.x);
+                int h = std::abs(current_pos.y - start_pos.y);
+                framebuffer.DrawRect(x, y, w, h, draw_color, border_width, fill_shapes, draw_color);
+                break;
+            }
 
-		case TOOL_TRIANGLE: { //triangle --> punts del triangle(3)
-			Vector2 p0 = start_pos;
-			Vector2 p1(current_pos.x, start_pos.y);
-			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
-			framebuffer.DrawTriangle(p0, p1, p2, draw_color, fill_shapes, draw_color);
-			break;
-		}
-		}
-	}
+            case TOOL_TRIANGLE: { //triangle --> punts del triangle(3)
+                Vector2 p0 = start_pos;
+                Vector2 p1(current_pos.x, start_pos.y);
+                Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
+                framebuffer.DrawTriangle(p0, p1, p2, draw_color, fill_shapes, draw_color);
+                break;
+            }
+            }
+        }
+    }
+	*/
 }
 
 
 
-void Application::OnMouseMove(SDL_MouseButtonEvent event)
-{
-	// Calculem xrel i yrel 
-	// Hem de calcular la distància que s'ha mogut el ratolí comparant amb l'últim frame.
-	static int last_x = event.x;
+void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
+	static int last_x = event.x; //inicialitzem last_x amb la posició actual del ratolí (per evitar saltar al principi)
 	static int last_y = event.y;
 
-	int xrel = event.x - last_x;
+	int xrel = event.x - last_x; //calculem la distancia moguda en x comparant la posición actual con la última posición
 	int yrel = event.y - last_y;
 
-	last_x = event.x; // Actualitzem per la pròxima vegada
-	last_y = event.y;
+	last_x = event.x; //actualitzem 
+	last_y = event.y; 
 
-	// MODE 1: PAINT
-
-	if (current_mode == 1)
-	{
+    // LAB1: Si estem en mode Paint (0) fem la funcionalitat de dibuix
+    if (current_mode == 0) {
 		Vector2 mouse(event.x, window_height - event.y);
 		current_pos = mouse;
 
@@ -349,54 +420,53 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
 		}
 	}
 
-	// MODE 2: CÀMERA 
-	else if (current_mode == 2)
+    //LAB2: MODE 1/2: CÀMERA (single o multiple entities)
+    else
 	{
-		// Fem servir SDL_GetMouseState per saber si el botó està premut mentre movem
-		int mx, my;
-		Uint32 buttons = SDL_GetMouseState(&mx, &my);
+		//SDL_GetMouseState per saber si el botó està premut mentre movem
+		int mx, my; //posicio del ratolí
+		Uint32 buttons = SDL_GetMouseState(&mx, &my); //obtenir el estat dels botons del ratolí (quins estan premuts) i la posició actual del ratolí (mx, my)
 
-		// Si el botó esquerre està premut, girem la càmera
-		if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
-		{
+		// BOTÓ ESQUERRE (ROTACIÓ de la càmera al voltant del target)
+        if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)){ 
 			float sensitivity = 0.01f; // Ajusta la velocitat aquí
 
-			// 1. Obtenim el vector de visió
-			Vector3 view = camera->eye - camera->center;
+			//obtenim el vector de visió
+			Vector3 view = camera->eye - camera->center; //vector des del centre (target) fins a l'ull (càmera) --> direcció on estem mirant
 
-			// 2. Rotació Horitzontal (Eix Y)
-			Matrix44 rot_y;
-			rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0));
-			view = rot_y.RotateVector(view);
+			//rotació Horitzontal (Eix Y)
+			Matrix44 rot_y; //matriu de rotació al voltant de l'eix Y (vertical) per moure la càmera a l'esquerra/dreta
+			rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0)); //rotar el vector de visió amb la matriu de rotació horitzontal
+			view = rot_y.RotateVector(view); //aplicar la rotació horitzontal al vector de visió
 
-			// 3. Rotació Vertical (Eix local)
-			// Calculem l'eix "dreta" de la càmera per saber com pujar/baixar
-			Vector3 right = view.Cross(camera->up).Normalize();
-			Matrix44 rot_x;
-			rot_x.MakeRotationMatrix(-yrel * sensitivity, right);
-			view = rot_x.RotateVector(view);
+			//rotació Vertical (Eix local)
+			Vector3 right = view.Cross(camera->up).Normalize(); //vector "right" perpendicular al vector de visió i al vector "up" de la càmera --> eix local per rotar verticalment (mirar amunt/avall)
+			Matrix44 rot_x; //matriu de rotació al voltant de l'eix local "right" per moure la càmera amunt/avall
+			rot_x.MakeRotationMatrix(-yrel * sensitivity, right); //rotar el vector de visió amb la matriu de rotació vertical
+			view = rot_x.RotateVector(view); //aplicar la rotació vertical al vector de visió
 
-			// 4. Actualitzem la càmera
-			camera->eye = camera->center + view;
+			//actualitzar la posició de l'ull de la càmera mantenint el centre fix (target)
+			camera->eye = camera->center + view; 
 		}
-		// BOTÓ DRET (PANNING)
-		else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
-		{
-			// 1. Calculem els vectors de la càmera per saber on és "dreta" i "dalt"
-			Vector3 front = (camera->center - camera->eye).Normalize();
-			Vector3 right = front.Cross(camera->up).Normalize();
-			Vector3 top = right.Cross(front).Normalize();
 
-			// 2. Velocitat (depèn de la distància per ser més natural)
+
+        // BOTÓ DRET (PANNING del target)
+        else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
+		{
+			//calculem els vectors de la càmera per saber on és "dreta" i "dalt"
+			Vector3 front = (camera->center - camera->eye).Normalize(); //vector de visió normalitzat (direcció on estem mirant)
+			Vector3 right = front.Cross(camera->up).Normalize(); //vector "right" perpendicular al vector de visió i al vector "up" de la càmera --> direcció a la dreta de la càmera
+			Vector3 top = right.Cross(front).Normalize(); //vector "top" perpendicular al vector "right" i al vector de visió --> direcció cap amunt de la càmera
+
+			//velocitat (depèn de la distància per ser més natural)
 			float speed = 0.01f * camera->eye.Distance(camera->center);
 
-			// 3. Calculem el desplaçament lateral
-			// xrel mou en l'eix 'right', yrel mou en l'eix 'top'
-			Vector3 movement = (right * -xrel * speed) + (top * yrel * speed);
+			//desplaçament lateral
+			Vector3 movement = (right * -xrel * speed) + (top * yrel * speed); //calcular el moviment combinant la direcció "right" i "top" amb la quantitat de moviment del ratolí (xrel, yrel) i la velocitat
 
-			// 4. Apliquem el moviment a l'ULL i al CENTRE
-			camera->eye = camera->eye + movement;
-			camera->center = camera->center + movement;
+			//aplicar el moviment a la posició de l'ull i del centre de la càmera per fer el panning
+			camera->eye = camera->eye + movement; //moviment de la càmera (ull)
+			camera->center = camera->center + movement; //moviment del centre (target) per mantenir la mateixa orientació de la càmera mentre es mou el punt al que mirem
 		}
 	}
 }
@@ -406,16 +476,17 @@ void Application::OnWheel(SDL_MouseWheelEvent event) //detecta scroll del ratoli
 {
 	float dy = event.preciseY;
 
-	if (current_mode == 2) // Només en mode 3D
+	//zoom amb la roda del ratolí: moure la càmera cap a dins/fora al llarg de la línia de visió (modes 1 i 2)
+	if (current_mode != 0) //nomes modes 1 i 2 (no mode paint)
 	{
-		float zoom_speed = 0.05f; // Velocitat (si va molt ràpid, posa 0.01f)
+		float zoom_speed = 0.02f; //velocitat 
 
-		// 1. Calculem el vector de direcció (la línia on estem mirant)
+		//vector de direcció de la càmera (des del centre fins a l'ull)
 		Vector3 view_vector = camera->center - camera->eye;
 
-		// 2. Movem el eye al llarg d'aquesta línia
-		//    Si dy és positiu (rodeta amunt), sumem vector -> ens apropem
-		//    Si dy és negatiu (rodeta avall), restem vector -> ens allunyem
+		//moure el eye de la càmera al llarg del vector de visió segons la direcció del scroll
+			//si dy és positiu (rodeta amunt), sumem vector -> ens apropem
+			//si dy és negatiu (rodeta avall), restem vector -> ens allunyem
 		camera->eye = camera->eye + (view_vector * dy * zoom_speed);
 	}
 }

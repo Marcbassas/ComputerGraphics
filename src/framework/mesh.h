@@ -11,6 +11,10 @@
 
 class Mesh
 {
+	// LAB mapping:
+	// - 2.2: Les dades de la malla (vèrtexs) s'utilitzen per projectar i rasteritzar triangles
+	// - 2.4: Les mateixes dades s'utilitzen per crear múltiples entitats animades
+
 	std::vector<Vector3> vertices;
 	std::vector<Vector3> normals;
 	std::vector<Vector2> uvs;

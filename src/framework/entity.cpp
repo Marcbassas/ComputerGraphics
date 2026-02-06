@@ -2,50 +2,48 @@
 #include <cmath> // Necessari per sin i cos
 
 Entity::Entity(){
-	model.SetIdentity();
+    model.SetIdentity();
+	//Inicialitzar els valors per a l'animació
+	this->mesh = nullptr; // no té malla per defecte
+	this->time = 0.0f;    //el temps comença a 0, i s'anirà acumulant a mesura que passi el temps en Update
 }
 
 Entity::Entity(Mesh* mesh) { //constructor amb malla
 	this->mesh = mesh; //punter a la malla
 	model.SetIdentity();
-	this->time = 0.0f;
+	this->time = 0.0f; //temps = 0 per començar l'animació des del principi
 }
 
 void Entity::Update(float seconds_elapsed) {
-	// 1. ACUMULEM EL TEMPS (Això és la clau!)
-	this->time += seconds_elapsed;
+	this->time += seconds_elapsed; //acumular el temps
 
-	// Ara fem servir 'this->time' en lloc de 'seconds_elapsed' per als càlculs
-	float rotation_speed = 2.0f; // Velocitat de gir
-	float angle = this->time * rotation_speed;
+	float rotation_speed = 2.0f; //velocitat de gir
+	float angle = this->time * rotation_speed; //angle = temps acumulat * velocitat de gir --> l'angle va creixent constantment, fent que l'entitat giri contínuament
 
-	float animation_speed = this->time * 3.0f; // Velocitat del batec
-	float s = 1.0f + sin(animation_speed) * 0.1f;
-	float y_pos = sin(animation_speed) * 2.0f;
+	float animation_speed = this->time * 3.0f; //velocitat del batec de l'animació (com més gran, més ràpid)
+	float s = 1.0f + sin(animation_speed) * 0.1f; //factor d'escala
+	float y_pos = sin(animation_speed) * 2.0f; //posicio vertical (batec) --> va pujant i baixant amb una amplitud de 2.0f
 
-	// 2. MATRIUS (Igual que abans)
-	Matrix44 m_scale;
-	m_scale.MakeScaleMatrix(s, s, s);
+	//MATRIUS
+	Matrix44 m_scale; //matriu escala
+	m_scale.MakeScaleMatrix(s, s, s); //aplicar el factor d'escala a la matriu d'escala
 
-	Matrix44 m_rotation;
-	// Ara 'angle' va creixent constantment, així que girarà
-	m_rotation.MakeRotationMatrix(angle, Vector3(0, 1, 0));
+	Matrix44 m_rotation; //matriu de rotació
+	m_rotation.MakeRotationMatrix(angle, Vector3(0, 1, 0)); //aplicar la rotació al voltant de l'eix Y amb l'angle calculat (que fa que giri contínuament)
 
-	// Correcció de l'eix (la que hem fet abans)
-	Matrix44 m_fix;
-	m_fix.MakeRotationMatrix(3.14159f, Vector3(0, 0, 1)); // O l'eix que t'hagi funcionat
+	Matrix44 m_fix; //matriu de correcció de l'eix
+	m_fix.MakeRotationMatrix(3.14159f, Vector3(0, 0, 1)); //correcio del eix de rotacio 
 
-	// Translació
-	float current_x = model.m[12];
-	Matrix44 m_translation;
-	m_translation.MakeTranslationMatrix(current_x, y_pos, 0.0f);
+	float current_x = model.m[12]; //posició actual en x de l'entitat (obtenim la component de translació de la matriu de modelat) --> per mantenir la posició horizontal fixa mentre l'entitat puja i baixa amb el batec
+	Matrix44 m_translation; //matriu de translació
+	m_translation.MakeTranslationMatrix(current_x, y_pos, 0.0f); //aplicar la translació amb la posición horizontal fija (current_x) y la posición vertical variable (y_pos) para el efecte del batec
 
-	// 3. COMBINACIÓ
+	//COMBINACIO DE LES MATRIUS: Model = Translation * Rotation * Fix * Scale (T * R * F * S)S
 	model = m_translation * m_rotation * m_fix * m_scale;
 }
 
 void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
-	if (!mesh) return;
+	if (!mesh) return; //si no hi ha malla, no renderitzem res
 
 	const std::vector<Vector3>& vertices = mesh->GetVertices(); //vector de vertexs de la malla
 

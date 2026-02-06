@@ -63,12 +63,24 @@ void Camera::SetPerspective(float fov, float aspect, float near_plane, float far
 {
 	type = PERSPECTIVE;
 
-	this->fov = fov;
-	this->aspect = aspect;
-	this->near_plane = near_plane;
-	this->far_plane = far_plane;
+    // Clamp and validate inputs to avoid invalid projection matrices
+    // Assegurem-nos que el FOV està en un rang raonable (1..179)
+    if (fov < 1.0f) fov = 1.0f;
+    if (fov > 179.0f) fov = 179.0f;
 
-	UpdateProjectionMatrix();
+    // Aspect ratio positiu
+    if (aspect <= 0.0f) aspect = 1.0f;
+
+    // Near ha de ser positiu i menor que far
+    if (near_plane < 0.001f) near_plane = 0.001f;
+    if (far_plane <= near_plane + 0.0001f) far_plane = near_plane + 0.1f;
+
+    this->fov = fov;
+    this->aspect = aspect;
+    this->near_plane = near_plane;
+    this->far_plane = far_plane;
+
+    UpdateProjectionMatrix();
 }
 
 void Camera::LookAt(const Vector3& eye, const Vector3& center, const Vector3& up)
