@@ -88,9 +88,12 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 		s2.x = (s2.x + 1.0f) * 0.5f * framebuffer->width;
 		s2.y = (1.0f - (s2.y + 1.0f) * 0.5f) * framebuffer->height;
 
-		//dibuixar el triangle a la framebuffer (només les vores) --> DrawLineDDA --> wireframe (dibuixar les línies entre els 3 punts)
-		framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, c);
-		framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, c);
-		framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, c);
+        // LAB3: 3.1: dibuixar triangle omplert en comptes de wireframe
+        //convertim a Vector2 i cridem a la funció de dibuixar triangle (omplert)
+        Vector2 tv0((int)s0.x, (int)s0.y);
+        Vector2 tv1((int)s1.x, (int)s1.y);
+        Vector2 tv2((int)s2.x, (int)s2.y);
+        //dibuixar triangle amb el mateix color per contorn i omplert
+        framebuffer->DrawTriangle(tv0, tv1, tv2, c, true, c);
 	}
 }
