@@ -7,12 +7,14 @@ Entity::Entity(){
     model.SetIdentity();
 	//Inicialitzar els valors per a l'animació
 	this->mesh = nullptr; // no té malla per defecte
+	texture = nullptr;
 	this->time = 0.0f;    //el temps comença a 0, i s'anirà acumulant a mesura que passi el temps en Update
 }
 
 Entity::Entity(Mesh* mesh) { //constructor amb malla
 	this->mesh = mesh; //punter a la malla
 	model.SetIdentity();
+	texture = nullptr;
 	this->time = 0.0f; //temps = 0 per començar l'animació des del principi
 }
 
@@ -46,6 +48,7 @@ void Entity::Update(float seconds_elapsed) {
 	model = m_trans * m_rot_y * m_rot_x * m_scale;
 }
 
+/*
 void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 	if (!mesh) return;
 
@@ -87,14 +90,73 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 		s2.x = (s2.x + 1.0f) * 0.5f * framebuffer->width;
 		s2.y = (1.0f - (s2.y + 1.0f) * 0.5f) * framebuffer->height;
 
-		// ✅ MANTENIR com Vector3 (la funció els rep així)
-		// ✅ Coordenades baricèntriques: cada vèrtex amb el seu color
+		// MANTENIR com Vector3 (la funció els rep així)
+		// Coordenades baricèntriques: cada vèrtex amb el seu color
 		Color c0 = Color(255, 0, 0);   // Vermell
 		Color c1 = Color(0, 255, 0);   // Verd
 		Color c2 = Color(0, 0, 255);   // Blau
 
-		// ✅ Dibuixar triangle interpolat amb Vector3
+		// Dibuixar triangle interpolat amb Vector3
 		framebuffer->DrawTriangleInterpolated(s0, s1, s2, c0, c1, c2);
+	}
+}
+*/
+
+void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
+	if (!mesh) return;
+
+	const auto& vertices = mesh->GetVertices();
+	const auto& uvs = mesh->GetUVs();
+
+	auto inside_clip = [](const Vector3& p)->bool {
+		return p.x >= -1 && p.x <= 1 &&
+			p.y >= -1 && p.y <= 1 &&
+			p.z >= -1 && p.z <= 1;
+		};
+
+	for (size_t i = 0; i + 2 < vertices.size(); i += 3)
+	{
+		Vector3 w0 = model * vertices[i];
+		Vector3 w1 = model * vertices[i + 1];
+		Vector3 w2 = model * vertices[i + 2];
+
+		Vector3 p0 = camera->ProjectVector(w0);
+		Vector3 p1 = camera->ProjectVector(w1);
+		Vector3 p2 = camera->ProjectVector(w2);
+
+		if (!inside_clip(p0) || !inside_clip(p1) || !inside_clip(p2))
+			continue;
+
+		Vector3 s0 = p0;
+		Vector3 s1 = p1;
+		Vector3 s2 = p2;
+
+		s0.x = (s0.x + 1) * 0.5f * framebuffer->width;
+		s0.y = (1 - (s0.y + 1) * 0.5f) * framebuffer->height;
+
+		s1.x = (s1.x + 1) * 0.5f * framebuffer->width;
+		s1.y = (1 - (s1.y + 1) * 0.5f) * framebuffer->height;
+
+		s2.x = (s2.x + 1) * 0.5f * framebuffer->width;
+		s2.y = (1 - (s2.y + 1) * 0.5f) * framebuffer->height;
+
+		// UVs del triángulo
+		Vector2 uv0 = uvs[i];
+		Vector2 uv1 = uvs[i + 1];
+		Vector2 uv2 = uvs[i + 2];
+
+		// Color por vértice (si no hay textura)
+		Color c0 = Color::WHITE;
+		Color c1 = Color::WHITE;
+		Color c2 = Color::WHITE;
+
+		framebuffer->DrawTriangleInterpolated(
+			s0, s1, s2,
+			c0, c1, c2,
+			zbuffer,
+			texture, // textura almacenada en Entity
+			uv0, uv1, uv2
+		);
 	}
 }
 

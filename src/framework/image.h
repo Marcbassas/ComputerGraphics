@@ -76,7 +76,8 @@ public:
 	void DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth, bool isFilled, const Color& fillColor); //2.1.2
 	void DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor); //2.1.3
 	// LAB3: 3.2 : draw filled triangle with barycentric interpolated color per vertex
-	void DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2); //3.2
+	//void DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2); //3.2
+	void DrawTriangleInterpolated( const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zbuffer, Image* texture, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2);
 	void ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, std::vector<int>& maxX);//helper per a l'algoritme de dibuix de triangles
 	void DrawImage(const Image& image, int x, int y); //Funció que afageix una imatge (2.2)
 

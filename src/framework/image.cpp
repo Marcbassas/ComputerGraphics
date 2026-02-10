@@ -1,4 +1,4 @@
-#include <string>
+Ôªø#include <string>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -14,14 +14,15 @@ Image::Image() {
 	pixels = NULL;
 }
 
-//dibuixar un triangle amb interpolaciÛ de color per vËrtexs (LAB3: 3.2)
+/*
+//dibuixar un triangle amb interpolaci√≥ de color per v√®rtexs (LAB3: 3.2)
 void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2) {
-	//calcular el bounding box del triangle per limitar el nombre de pÌxels a processar
-	//bounding box = rectangle mÌnim que contÈ el triangle, definit per les coordenades mÌnimes i m‡ximes dels vËrtexs del triangle
-	int minX = (int)floor(std::min(std::min(p0.x, p1.x), p2.x)); //coordenada MIN en x del triangle --> calculada com el mÌnim entre les coordenades x dels 3 vËrtexs
-	int minY = (int)floor(std::min(std::min(p0.y, p1.y), p2.y)); //coordenada MIN en y del triangle --> calculada com el mÌnim entre las coordenades y dels 3 vËrtexs
-	int maxX = (int)ceil(std::max(std::max(p0.x, p1.x), p2.x)); //coordenada MAX en x del triangle --> calculada como el m·ximo entre las coordenades x dels 3 vËrtexs
-	int maxY = (int)ceil(std::max(std::max(p0.y, p1.y), p2.y)); //coordenada MAX en y del triangle --> calculada como el m·ximo entre las coordenades y dels 3 vËrtexs
+	//calcular el bounding box del triangle per limitar el nombre de p√≠xels a processar
+	//bounding box = rectangle m√≠nim que cont√© el triangle, definit per les coordenades m√≠nimes i m√†ximes dels v√®rtexs del triangle
+	int minX = (int)floor(std::min(std::min(p0.x, p1.x), p2.x)); //coordenada MIN en x del triangle --> calculada com el m√≠nim entre les coordenades x dels 3 v√®rtexs
+	int minY = (int)floor(std::min(std::min(p0.y, p1.y), p2.y)); //coordenada MIN en y del triangle --> calculada com el m√≠nim entre las coordenades y dels 3 v√®rtexs
+	int maxX = (int)ceil(std::max(std::max(p0.x, p1.x), p2.x)); //coordenada MAX en x del triangle --> calculada como el m√°ximo entre las coordenades x dels 3 v√®rtexs
+	int maxY = (int)ceil(std::max(std::max(p0.y, p1.y), p2.y)); //coordenada MAX en y del triangle --> calculada como el m√°ximo entre las coordenades y dels 3 v√®rtexs
 
 	//
 	if (minX < 0) minX = 0; //coordenades pantalla -->  x: vector x = (vector x + 1) * 0.5f * framebuffer width
@@ -29,43 +30,130 @@ void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const
 	if (maxX >= (int)width)  maxX = (int)width - 1; //coordenades pantalla -->  x: vector x = (vector x + 1) * 0.5f * framebuffer width
 	if (maxY >= (int)height) maxY = (int)height - 1; //coordenades pantalla -->  y: vector y = (1 - (vector y + 1) * 0.5f) * framebuffer height
 
-	//calcular el denominador de les coordenades baricËntriques per evitar calcular-lo per cada pÌxel
+	//calcular el denominador de les coordenades baric√®ntriques per evitar calcular-lo per cada p√≠xel
 	//denominador = (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y)
-	//el denominador es el mateix per tots els pÌxels del triangle,nomÈs depËn de les coordenades dels vËrtexs del triangle
+	//el denominador es el mateix per tots els p√≠xels del triangle,nom√©s dep√®n de les coordenades dels v√®rtexs del triangle
     float denom = ( (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y) );
 	if (fabs(denom) < 1e-6f) return; //si el denom petit --> triangle molt petit o degenerate --> no dibuixem res
 
-	const float eps = 1e-5f; // toler‡ncia per a considerar un pÌxel com a dins del triangle
+	const float eps = 1e-5f; // toler√†ncia per a considerar un p√≠xel com a dins del triangle
 
-	//per cada pixel dins del bounding box, calcular les coordenades baricËntriques i interpolar el color
+	//per cada pixel dins del bounding box, calcular les coordenades baric√®ntriques i interpolar el color
 	for (int y = minY; y <= maxY; ++y) { //per cada coordenada y dins del bounding box
 		for (int x = minX; x <= maxX; ++x) { //per cada coordenada x dins del bounding box
-			//calcular les coordenades baricËntriques del pÌxel (x,y) respecte al triangle definit pels vËrtexs p0,p1,p2
+			//calcular les coordenades baric√®ntriques del p√≠xel (x,y) respecte al triangle definit pels v√®rtexs p0,p1,p2
             float px = x + 0.5f; //centre del pixel (x,y)
             float py = y + 0.5f; 
 
-			float w0 = ((p1.y - p2.y) * (px - p2.x) + (p2.x - p1.x) * (py - p2.y)) / denom; //coordenada baricËntrica respecte al vËrtex p0
-			float w1 = ((p2.y - p0.y) * (px - p2.x) + (p0.x - p2.x) * (py - p2.y)) / denom; //coordenada baricËntrica respecte al vËrtex p1 
-			float w2 = 1.0f - w0 - w1; //coordenada baricËntrica respecte al vËrtex p2 (la suma de les coordenades baricËntriques ha de ser 1)
+			float w0 = ((p1.y - p2.y) * (px - p2.x) + (p2.x - p1.x) * (py - p2.y)) / denom; //coordenada baric√®ntrica respecte al v√®rtex p0
+			float w1 = ((p2.y - p0.y) * (px - p2.x) + (p0.x - p2.x) * (py - p2.y)) / denom; //coordenada baric√®ntrica respecte al v√®rtex p1 
+			float w2 = 1.0f - w0 - w1; //coordenada baric√®ntrica respecte al v√®rtex p2 (la suma de les coordenades baric√®ntriques ha de ser 1)
 
-			//si alguna de les coordenades baricËntres es menor que -eps --> el pÌxel est‡ fora del triangle (considerant una toler‡ncia eps per evitar problemes numËrics) --> no dibuixem res
+			//si alguna de les coordenades baric√®ntres es menor que -eps --> el p√≠xel est√† fora del triangle (considerant una toler√†ncia eps per evitar problemes num√®rics) --> no dibuixem res
             if (w0 < -eps || w1 < -eps || w2 < -eps)
                 continue;
 
-			//clamp coordenades baricËntriques a 0 per evitar problemes numËrics en la interpolaciÛ del color 
+			//clamp coordenades baric√®ntriques a 0 per evitar problemes num√®rics en la interpolaci√≥ del color 
 			//coord baricentrica negativa = 0
             if (w0 < 0.0f) w0 = 0.0f; if (w1 < 0.0f) w1 = 0.0f; if (w2 < 0.0f) w2 = 0.0f;
             float sum = w0 + w1 + w2;
             if (sum <= 0.0f) continue;
             w0 /= sum; w1 /= sum; w2 /= sum;
 
-			//interpolar color del pÌxel (x,y) com a combinaciÛ lineal dels colors dels vËrtexs del triangle, ponderada per les coordenades baricËntriques
+			//interpolar color del p√≠xel (x,y) com a combinaci√≥ lineal dels colors dels v√®rtexs del triangle, ponderada per les coordenades baric√®ntriques
             Color c = c0 * w0 + c1 * w1 + c2 * w2;
 
             SetPixel(x, y, c);
         }
     }
 }
+*/
+
+void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zbuffer, Image* texture, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2)
+{
+	int minX = (int)floor(std::min({ p0.x, p1.x, p2.x }));
+	int minY = (int)floor(std::min({ p0.y, p1.y, p2.y }));
+	int maxX = (int)ceil(std::max({ p0.x, p1.x, p2.x }));
+	int maxY = (int)ceil(std::max({ p0.y, p1.y, p2.y }));
+
+	minX = std::max(0, minX);
+	minY = std::max(0, minY);
+	maxX = std::min((int)width - 1, maxX);
+	maxY = std::min((int)height - 1, maxY);
+
+	float denom = ((p1.y - p2.y) * (p0.x - p2.x) +
+		(p2.x - p1.x) * (p0.y - p2.y));
+
+	if (fabs(denom) < 1e-6f) return;
+
+	const float eps = 1e-5f;
+
+	for (int y = minY; y <= maxY; ++y)
+	{
+		for (int x = minX; x <= maxX; ++x)
+		{
+			float px = x + 0.5f;
+			float py = y + 0.5f;
+
+			float w0 = ((p1.y - p2.y) * (px - p2.x) +
+				(p2.x - p1.x) * (py - p2.y)) / denom;
+
+			float w1 = ((p2.y - p0.y) * (px - p2.x) +
+				(p0.x - p2.x) * (py - p2.y)) / denom;
+
+			float w2 = 1.0f - w0 - w1;
+
+			if (w0 < -eps || w1 < -eps || w2 < -eps)
+				continue;
+
+			if (w0 < 0) w0 = 0;
+			if (w1 < 0) w1 = 0;
+			if (w2 < 0) w2 = 0;
+
+			float sum = w0 + w1 + w2;
+			if (sum <= 0) continue;
+
+			w0 /= sum; w1 /= sum; w2 /= sum;
+
+			// -------------------------
+			//  Z‚ÄëBUFFER
+			// -------------------------
+			float z = p0.z * w0 + p1.z * w1 + p2.z * w2;
+
+			float& zbuf = zbuffer->GetPixelRef(x, y);
+			if (z > zbuf) continue; // pixel oculto
+
+			zbuf = z; // actualizar z‚Äëbuffer
+
+			// -------------------------
+			//  TEXTURAS O COLOR
+			// -------------------------
+			Color finalColor;
+
+			if (texture) {
+				// Interpolar UVs
+				Vector2 uv = uv0 * w0 + uv1 * w1 + uv2 * w2;
+
+				// Pasar de [0,1] a [0..W-1]
+				int tx = uv.x * (texture->width - 1);
+				int ty = uv.y * (texture->height - 1);
+
+				// Clamp
+				tx = std::max(0, std::min((int)texture->width - 1, tx));
+				ty = std::max(0, std::min((int)texture->height - 1, ty));
+
+				finalColor = texture->GetPixel(tx, ty);
+			}
+			else {
+				// Color por v√©rtice
+				finalColor = c0 * w0 + c1 * w1 + c2 * w2;
+			}
+
+			SetPixel(x, y, finalColor);
+		}
+	}
+}
+
 
 Image::Image(unsigned int width, unsigned int height)
 {
@@ -495,40 +583,40 @@ void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int b
 	}
 }
 
-//funciÛ ScanLine per calcular els lÌmits del triangle (AET)
+//funci√≥ ScanLine per calcular els l√≠mits del triangle (AET)
 void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, std::vector<int>& maxX) { 
-	int dx = x1 - x0; //diferËncia de x
-	int dy = y1 - y0; //diferËncia de y
-	//calculem quina dist‡ncia Ès mÈs gran (horitzontal o vertical) per saber quants passos pÌxels hem de recÛrrer
+	int dx = x1 - x0; //difer√®ncia de x
+	int dy = y1 - y0; //difer√®ncia de y
+	//calculem quina dist√†ncia √©s m√©s gran (horitzontal o vertical) per saber quants passos p√≠xels hem de rec√≥rrer
 	int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
 
-	//si els dos punts sÛn el mateix, no fem res per evitar dividir per 0
+	//si els dos punts s√≥n el mateix, no fem res per evitar dividir per 0
 	if (steps == 0) return;
 
 	//calculem quant hem de sumar a la X i a la Y a cada pas per anar del punt A al B
 	float x_increment = dx / (float)steps; //increment de x cada pas
 	float y_increment = dy / (float)steps; //increment de y cada pas
 
-	//coordds inicials (float per tenir precisiÛ decimal mentre avancem).
+	//coordds inicials (float per tenir precisi√≥ decimal mentre avancem).
 	float x = (float)x0;
 	float y = (float)y0;
 
-	//recorrer la lÌnia des del punt inicial fins al final
+	//recorrer la l√≠nia des del punt inicial fins al final
 	for (int i = 0; i <= steps; i++){
 		int currentY = (int)round(y); //pasar de float a int
 		int currentX = (int)round(x); //pasar de float a int
 
-		//nomÈs processem si estem dins de l'alÁada de la imatge!!
-		if (currentY >= 0 && currentY < height) { //comprovem que la Y est‡ dins de la imatge
-			if (currentX < minX[currentY]){ // minX[currentY] guarda el valor de X mÈs a l'esquerra trobat fins ara a l'alÁada Y
-				minX[currentY] = currentX; //si la X actual Ès M…S PETITA que la que tenÌem guardada, la substituÔm
+		//nom√©s processem si estem dins de l'al√ßada de la imatge!!
+		if (currentY >= 0 && currentY < height) { //comprovem que la Y est√† dins de la imatge
+			if (currentX < minX[currentY]){ // minX[currentY] guarda el valor de X m√©s a l'esquerra trobat fins ara a l'al√ßada Y
+				minX[currentY] = currentX; //si la X actual √©s M√âS PETITA que la que ten√≠em guardada, la substitu√Øm
 			} 
 			
-			if (currentX > maxX[currentY]){ //maxX[currentY] guarda el valor de X mÈs a la dreta trobat fins ara
-				maxX[currentY] = currentX; //si la X actual Ès M…S GRAN, la substituÔm
+			if (currentX > maxX[currentY]){ //maxX[currentY] guarda el valor de X m√©s a la dreta trobat fins ara
+				maxX[currentY] = currentX; //si la X actual √©s M√âS GRAN, la substitu√Øm
 			}
 		}
-		//avancem al seg¸ent punt de la lÌnia
+		//avancem al seg√ºent punt de la l√≠nia
 		x += x_increment;
 		y += y_increment;
 	}
@@ -538,18 +626,18 @@ void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<int>& minX, 
 void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor){
 	//INTERIOR TRIANGLE
 	if (isFilled) { 
-		std::vector<int> minX(height, width); // minX l'omplim amb un valor molt alt perquË volem trobar el MÕNIM
-		std::vector<int> maxX(height, -1); // maxX l'omplim amb un valor molt baix perquË volem trobar el M¿XIM
+		std::vector<int> minX(height, width); // minX l'omplim amb un valor molt alt perqu√® volem trobar el M√çNIM
+		std::vector<int> maxX(height, -1); // maxX l'omplim amb un valor molt baix perqu√® volem trobar el M√ÄXIM
 		//scanline per cada costat del triangle
 		ScanLineDDA((int)p0.x, (int)p0.y, (int)p1.x, (int)p1.y, minX, maxX); //costat 1
 		ScanLineDDA((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, minX, maxX); //costat 2
 		ScanLineDDA((int)p2.x, (int)p2.y, (int)p0.x, (int)p0.y, minX, maxX); //costat 3
 
 		for (int y = 0; y < height; y++){ //recorrem totes les files de la imatge
-			if (minX[y] <= maxX[y] && maxX[y] != -1) { //si hi ha algun pÌxel a pintar en aquesta fila
-				for (int x = minX[y]; x <= maxX[y]; x++) { //bucle horitzontal --> per cada pÌxel entre minX i maxX
-					if (x >= 0 && x < width) { //mirem que la X est‡ dins de la imatge
-						SetPixel(x, y, fillColor); //pinta el pÌxel
+			if (minX[y] <= maxX[y] && maxX[y] != -1) { //si hi ha algun p√≠xel a pintar en aquesta fila
+				for (int x = minX[y]; x <= maxX[y]; x++) { //bucle horitzontal --> per cada p√≠xel entre minX i maxX
+					if (x >= 0 && x < width) { //mirem que la X est√† dins de la imatge
+						SetPixel(x, y, fillColor); //pinta el p√≠xel
 					}
 				}
 			}

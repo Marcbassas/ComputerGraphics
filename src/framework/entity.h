@@ -12,10 +12,13 @@ public:
 
 	Entity(); //constructor
 	Entity(Mesh* mesh); //constructor amb malla
+
+	Image* texture = nullptr;
 	
 	float time;
 
 	//metodes
-	void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)
+	//void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)
+	void Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer);
 	void Update(float dt); //actualitza l'entitat
 };

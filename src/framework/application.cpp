@@ -128,6 +128,9 @@ void Application::Render(void) { //renderitza l'aplicació
 
 	//MODE 2: dibuixar VARIES ENTITATS animades (mode d'animació)
 	if (current_mode == 2) { 
+        // Crear Z-buffer cada frame 
+        FloatImage zbuffer(framebuffer.width, framebuffer.height); 
+        zbuffer.Fill(999999.0f); // o FLT_MAX
 		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
         for (size_t i = 0; i < entities.size(); ++i) { //dibuixar les 3 entitats 
             //colors de les entitats: blau, verd, vermell
@@ -135,7 +138,7 @@ void Application::Render(void) { //renderitza l'aplicació
 			if (i % 3 == 0) col = Color::BLUE; //entitat 0 = blau
 			else if (i % 3 == 1) col = Color::GREEN; //entitat 1 = verd
 			else if (i % 3 == 2) col = Color::RED; //entitat 2 = vermell
-            entities[i]->Render(&framebuffer, camera, col); //renderitzar l'entitat al framebuffer amb la càmera i color
+            entities[i]->Render(&framebuffer, camera, &zbuffer); //renderitzar l'entitat al framebuffer amb la càmera i color
         }
 		framebuffer.Render();//mostrar framebuffer a la finestra
 		return;//SORTIR
@@ -144,8 +147,11 @@ void Application::Render(void) { //renderitza l'aplicació
     //MODE 1: dibuixar UNA SOLA ENTITAT (sense animació)
 	else if (current_mode == 1) {
 		framebuffer.Fill(Color::BLACK);
+        // Crear Z-buffer 
+        FloatImage zbuffer(framebuffer.width, framebuffer.height); 
+        zbuffer.Fill(999999.0f);
 		if (entities.size() >= 2) {
-			entities[1]->Render(&framebuffer, camera, Color::WHITE);  // La del mig → centre
+			entities[1]->Render(&framebuffer, camera, &zbuffer);  // La del mig → centre
 		}
 		framebuffer.Render();
 		return;
