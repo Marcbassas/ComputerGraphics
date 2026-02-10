@@ -83,6 +83,10 @@ void Application::Init(void) { //inicialitza l'aplicació
 	for (int i = 0; i < 3; i++) {
 		Entity* ent = new Entity(m);
 
+        // CARREGAR TEXTURA PER A AQUESTA ENTITAT 
+        ent->texture = new Image(); 
+        ent->texture->LoadTGA("textures/lee_color_specular.tga", true);
+
 		//inicialitzar la matriu de model per a cada entitat
 		Matrix44 m_trans;
 		m_trans.MakeTranslationMatrix((i - 1) * 6.0f, 0.0f, 0.0f);
@@ -118,6 +122,7 @@ void Application::Init(void) { //inicialitza l'aplicació
 		200.0f                              //Far plane 
 	);
 }
+
 void Application::Render(void) { //renderitza l'aplicació
 	
 	//camera SETPERSPECTIVE: fov, aspect ratio, planol daprop, planol llunya
