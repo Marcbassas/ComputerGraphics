@@ -427,13 +427,40 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {
-    int xrel = event.x - last_mouse_x;
-    int yrel = event.y - last_mouse_y;
+    static int last_x = event.x;
+    static int last_y = event.y;
 
-    last_mouse_x = event.x;
-    last_mouse_y = event.y;
+    int xrel = event.x - last_x;
+    int yrel = event.y - last_y;
+
+    last_x = event.x;
+    last_y = event.y;
+
+    // Mode paint (LAB1) ─ no tocar
+    if (current_mode == 0)
+    {
+        Vector2 mouse(event.x, window_height - event.y);
+        current_pos = mouse;
+
+        if (is_drawing)
+        {
+            Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+            switch (current_tool)
+            {
+            case TOOL_PENCIL:
+            case TOOL_ERASER:
+                framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
+                start_pos = current_pos;
+                break;
+            default:
+                break;
+            }
+        }
+        return;
+    }
+
     // ────────────────────────────────────────────────
-    // Modes 1 i 2 → control de càmera 3D (LAB 2)
+    // Modes 1 i 2: control 3D amb mouse state
     // ────────────────────────────────────────────────
     int mx, my;
     Uint32 buttons = SDL_GetMouseState(&mx, &my);
@@ -441,21 +468,23 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
     bool left_pressed = (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
     bool right_pressed = (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
 
-    float sensitivity = 0.005f;   // orbit sensitivity (ajusta si cal)
+    float orbit_sensitivity = 0.005f;   // ajusta si vols més/menys ràpid
+    float pan_sensitivity = 0.035f;   // ajusta segons distància
 
-    if (left_pressed)   // ── ORBIT ── Botó esquerre premut
+    // ── ORBIT ── Botó esquerre premut
+    if (left_pressed)
     {
         Vector3 view = camera->eye - camera->center;
 
-        // Rotació horitzontal (Y global)
+        // Rotació horitzontal (Y global) ─ signe invertit per natural
         Matrix44 rot_y;
-        rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0));
+        rot_y.MakeRotationMatrix(-xrel * orbit_sensitivity, Vector3(0, 1, 0));
         view = rot_y * view;
 
         // Rotació vertical (eix right local)
         Vector3 right = view.Cross(camera->up).Normalize();
         Matrix44 rot_x;
-        rot_x.MakeRotationMatrix(-yrel * sensitivity, right);
+        rot_x.MakeRotationMatrix(-yrel * orbit_sensitivity, right);
         view = rot_x * view;
 
         camera->eye = camera->center + view;
@@ -463,30 +492,32 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
         camera->UpdateViewMatrix();
     }
 
-    if (right_pressed)   // ── PAN ── Botó dret premut
+    // ── PAN ── Botó dret premut → MOU NOMÉS CENTER
+    if (right_pressed)
     {
-        // Compute camera basis for panning
+        // Vectors locals de la càmera
         Vector3 forward = (camera->center - camera->eye).Normalize();
         Vector3 right = forward.Cross(camera->up).Normalize();
-        Vector3 up = right.Cross(forward).Normalize();
+        Vector3 up = right.Cross(forward).Normalize();  // up ortogonal real
 
+        // Velocitat proporcional a la distància actual (més lluny → mou més)
         float dist = (camera->eye - camera->center).Length();
-        float pan_speed = 0.04f * dist;
+        float speed = pan_sensitivity * dist;
 
-        // delta in world units (mouse right -> pan right). invert Y to match screen coordinates
-        Vector3 delta = (right * (xrel * pan_speed)) - (up * (yrel * pan_speed));
+        // Delta en espai món
+        float dx = -xrel * speed;   // ── signe ── mou centre en la direcció del ratolí
+        float dy = -yrel * speed;   // ── signe ── (ajusta si vols invertir)
 
-        // Move only the center (target) so the right-click pan updates the focus only
-        camera->center += delta;
+        // Aplicar sense +=  (obligatori pel teu framework)
+        camera->center.x += right.x * dx + up.x * dy;
+        camera->center.y += right.y * dx + up.y * dy;
+        camera->center.z += right.z * dx + up.z * dy;
 
         camera->UpdateViewMatrix();
     }
-
-    // Nota: si vols que el pan mogui eye i centre junts (com en alguns programes),
-    // pots fer camera->eye += delta; també.
-    // Però segons el lab: "The center (target) of the camera should be interactive using the mouse (right button)."
-    // → només moure center és el que demana
 }
+
+
 
 void Application::OnWheel(SDL_MouseWheelEvent event)
 {
