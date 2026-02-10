@@ -391,17 +391,17 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
-	static int last_x = event.x; //inicialitzem last_x amb la posició actual del ratolí (per evitar saltar al principi)
+	static int last_x = event.x;
 	static int last_y = event.y;
 
-	int xrel = event.x - last_x; //calculem la distancia moguda en x comparant la posición actual con la última posición
+	int xrel = event.x - last_x;
 	int yrel = event.y - last_y;
 
-	last_x = event.x; //actualitzem 
-	last_y = event.y; 
+	last_x = event.x;
+	last_y = event.y;
 
-    // LAB1: Si estem en mode Paint (0) fem la funcionalitat de dibuix
-    if (current_mode == 0) {
+	// LAB1: Si estem en mode Paint (0) fem la funcionalitat de dibuix
+	if (current_mode == 0) {
 		Vector2 mouse(event.x, window_height - event.y);
 		current_pos = mouse;
 
@@ -420,53 +420,52 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOL
 		}
 	}
 
-    //LAB2: MODE 1/2: CÀMERA (single o multiple entities)
-    else
+	//LAB2: MODE 1/2: CÀMERA (single o multiple entities)
+	else
 	{
-		//SDL_GetMouseState per saber si el botó està premut mentre movem
-		int mx, my; //posicio del ratolí
-		Uint32 buttons = SDL_GetMouseState(&mx, &my); //obtenir el estat dels botons del ratolí (quins estan premuts) i la posició actual del ratolí (mx, my)
+		int mx, my;
+		Uint32 buttons = SDL_GetMouseState(&mx, &my);
 
-		// BOTÓ ESQUERRE (ROTACIÓ de la càmera al voltant del target)
-        if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)){ 
-			float sensitivity = 0.01f; // Ajusta la velocitat aquí
+		// BOTÓ ESQUERRE (ORBIT - Rotació de l'EYE al voltant del CENTER)
+		if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
+		{
+			float sensitivity = 0.01f;
 
-			//obtenim el vector de visió
-			Vector3 view = camera->eye - camera->center; //vector des del centre (target) fins a l'ull (càmera) --> direcció on estem mirant
+			//obtenim el vector de visió (des del centre cap a l'ull)
+			Vector3 view = camera->eye - camera->center;
 
-			//rotació Horitzontal (Eix Y)
-			Matrix44 rot_y; //matriu de rotació al voltant de l'eix Y (vertical) per moure la càmera a l'esquerra/dreta
-			rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0)); //rotar el vector de visió amb la matriu de rotació horitzontal
-			view = rot_y.RotateVector(view); //aplicar la rotació horitzontal al vector de visió
+			//rotació Horitzontal (Eix Y global)
+			Matrix44 rot_y;
+			rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0));
+			view = rot_y.RotateVector(view);
 
-			//rotació Vertical (Eix local)
-			Vector3 right = view.Cross(camera->up).Normalize(); //vector "right" perpendicular al vector de visió i al vector "up" de la càmera --> eix local per rotar verticalment (mirar amunt/avall)
-			Matrix44 rot_x; //matriu de rotació al voltant de l'eix local "right" per moure la càmera amunt/avall
-			rot_x.MakeRotationMatrix(-yrel * sensitivity, right); //rotar el vector de visió amb la matriu de rotació vertical
-			view = rot_x.RotateVector(view); //aplicar la rotació vertical al vector de visió
+			//rotació Vertical (Eix local "right")
+			Vector3 right = view.Cross(camera->up).Normalize();
+			Matrix44 rot_x;
+			rot_x.MakeRotationMatrix(-yrel * sensitivity, right);
+			view = rot_x.RotateVector(view);
 
-			//actualitzar la posició de l'ull de la càmera mantenint el centre fix (target)
-			camera->eye = camera->center + view; 
+			//actualitzar la posició de l'ull mantenint el centre fix
+			camera->eye = camera->center + view;
 		}
 
-
-        // BOTÓ DRET (PANNING del target)
-        else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
+		// BOTÓ DRET (PANNING - Mou el CENTER i l'EYE junts)
+		else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
 		{
-			//calculem els vectors de la càmera per saber on és "dreta" i "dalt"
-			Vector3 front = (camera->center - camera->eye).Normalize(); //vector de visió normalitzat (direcció on estem mirant)
-			Vector3 right = front.Cross(camera->up).Normalize(); //vector "right" perpendicular al vector de visió i al vector "up" de la càmera --> direcció a la dreta de la càmera
-			Vector3 top = right.Cross(front).Normalize(); //vector "top" perpendicular al vector "right" i al vector de visió --> direcció cap amunt de la càmera
+			//calculem els vectors de la càmera
+			Vector3 front = (camera->center - camera->eye).Normalize();
+			Vector3 right = front.Cross(camera->up).Normalize();
+			Vector3 top = right.Cross(front).Normalize();
 
-			//velocitat (depèn de la distància per ser més natural)
+			//velocitat proporcional a la distància
 			float speed = 0.01f * camera->eye.Distance(camera->center);
 
-			//desplaçament lateral
-			Vector3 movement = (right * -xrel * speed) + (top * yrel * speed); //calcular el moviment combinant la direcció "right" i "top" amb la quantitat de moviment del ratolí (xrel, yrel) i la velocitat
+			//desplaçament lateral i vertical
+			Vector3 movement = (right * -xrel * speed) + (top * yrel * speed);
 
-			//aplicar el moviment a la posició de l'ull i del centre de la càmera per fer el panning
-			camera->eye = camera->eye + movement; //moviment de la càmera (ull)
-			camera->center = camera->center + movement; //moviment del centre (target) per mantenir la mateixa orientació de la càmera mentre es mou el punt al que mirem
+			//aplicar el moviment a ambdós (eye i center) per mantenir l'orientació
+			camera->eye = camera->eye + movement;
+			camera->center = camera->center + movement;
 		}
 	}
 }
