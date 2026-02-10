@@ -1,45 +1,49 @@
-#include "entity.h"
+ï»¿#include "entity.h"
 #include <cmath> // Necessari per sin i cos
+#include <map>   // âœ… AFEGEIX AQUESTA LÃNIA
+
 
 Entity::Entity(){
     model.SetIdentity();
-	//Inicialitzar els valors per a l'animació
-	this->mesh = nullptr; // no té malla per defecte
-	this->time = 0.0f;    //el temps comença a 0, i s'anirà acumulant a mesura que passi el temps en Update
+	//Inicialitzar els valors per a l'animaciÃ³
+	this->mesh = nullptr; // no tÃ© malla per defecte
+	this->time = 0.0f;    //el temps comenÃ§a a 0, i s'anirÃ  acumulant a mesura que passi el temps en Update
 }
 
 Entity::Entity(Mesh* mesh) { //constructor amb malla
 	this->mesh = mesh; //punter a la malla
 	model.SetIdentity();
-	this->time = 0.0f; //temps = 0 per començar l'animació des del principi
+	this->time = 0.0f; //temps = 0 per comenÃ§ar l'animaciÃ³ des del principi
 }
 
+//actualittza l'aplicacio en funcio del temps que ha passat
 void Entity::Update(float seconds_elapsed) {
-	this->time += seconds_elapsed; //acumular el temps
+	this->time += seconds_elapsed;
 
-	float rotation_speed = 2.0f; //velocitat de gir
-	float angle = this->time * rotation_speed; //angle = temps acumulat * velocitat de gir --> l'angle va creixent constantment, fent que l'entitat giri contínuament
+	float rotation_speed = 2.0f;          // rotaciÃ³ contÃ­nua
+	float animation_speed = this->time * 3.0f;
 
-	float animation_speed = this->time * 3.0f; //velocitat del batec de l'animació (com més gran, més ràpid)
-	float s = 1.0f + sin(animation_speed) * 0.1f; //factor d'escala
-	float y_pos = sin(animation_speed) * 2.0f; //posicio vertical (batec) --> va pujant i baixant amb una amplitud de 2.0f
+	// Escala base 5.0f + petita pulsaciÃ³
+	float s = 5.0f + sin(animation_speed) * 0.5f;   // oscilÂ·la entre ~4.5 i 5.5
 
-	//MATRIUS
-	Matrix44 m_scale; //matriu escala
-	m_scale.MakeScaleMatrix(s, s, s); //aplicar el factor d'escala a la matriu d'escala
+	// PosiciÃ³ Y que rebota
+	float y_pos = sin(animation_speed) * 2.5f;
 
-	Matrix44 m_rotation; //matriu de rotació
-	m_rotation.MakeRotationMatrix(angle, Vector3(0, 1, 0)); //aplicar la rotació al voltant de l'eix Y amb l'angle calculat (que fa que giri contínuament)
+	// Recuperem X inicial (com ja tenies)
+	static std::map<Entity*, float> initial_x_positions;
+	if (initial_x_positions.find(this) == initial_x_positions.end()) {
+		initial_x_positions[this] = model.m[12];
+	}
+	float initial_x = initial_x_positions[this];
 
-	Matrix44 m_fix; //matriu de correcció de l'eix
-	m_fix.MakeRotationMatrix(3.14159f, Vector3(0, 0, 1)); //correcio del eix de rotacio 
+	// Matrius
+	Matrix44 m_scale;    m_scale.MakeScaleMatrix(s, s, s);
+	Matrix44 m_rot_y;    m_rot_y.MakeRotationMatrix(this->time * rotation_speed, Vector3(0, 1, 0));
+	Matrix44 m_rot_x;    m_rot_x.MakeRotationMatrix(3.14159f, Vector3(1, 0, 0));  // <-- IMPORTANT: la rotaciÃ³ per posar-lo dret
+	Matrix44 m_trans;    m_trans.MakeTranslationMatrix(initial_x, y_pos, 0.0f);
 
-	float current_x = model.m[12]; //posició actual en x de l'entitat (obtenim la component de translació de la matriu de modelat) --> per mantenir la posició horizontal fixa mentre l'entitat puja i baixa amb el batec
-	Matrix44 m_translation; //matriu de translació
-	m_translation.MakeTranslationMatrix(current_x, y_pos, 0.0f); //aplicar la translació amb la posición horizontal fija (current_x) y la posición vertical variable (y_pos) para el efecte del batec
-
-	//COMBINACIO DE LES MATRIUS: Model = Translation * Rotation * Fix * Scale (T * R * F * S)S
-	model = m_translation * m_rotation * m_fix * m_scale;
+	// Ordre correcte: Translation * RotY * RotX * Scale
+	model = m_trans * m_rot_y * m_rot_x * m_scale;
 }
 
 void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
@@ -47,14 +51,14 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 
 	const std::vector<Vector3>& vertices = mesh->GetVertices(); //vector de vertexs de la malla
 
-	auto inside_clip = [](const Vector3& p)->bool { //funció lambda per a saber si un punt està dins del cub de retallat
+	auto inside_clip = [](const Vector3& p)->bool { //funciÃ³ lambda per a saber si un punt estÃ  dins del cub de retallat
 		return p.x >= -1.0f && p.x <= 1.0f &&
 			   p.y >= -1.0f && p.y <= 1.0f &&
 			   p.z >= -1.0f && p.z <= 1.0f;
 	};
 
 	//iterar sobre els vertexs de la malla de 3 en 3 (triangles) (2.2.1)
-	for (size_t i = 0; i + 2 < vertices.size(); i += 3) { //size_t perque és un índex, recorre tots els triangles (3 vertexs per triangle)
+	for (size_t i = 0; i + 2 < vertices.size(); i += 3) { //size_t perque Ã©s un Ã­ndex, recorre tots els triangles (3 vertexs per triangle)
 		////transformar els vertexs de LOCAL --> WORLD
 		//multipliquem la matriu de modelat per cada vertex del triangle
 		Vector3 w0 = model * vertices[i];
@@ -89,7 +93,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 		s2.y = (1.0f - (s2.y + 1.0f) * 0.5f) * framebuffer->height;
 
         // LAB3: 3.1: dibuixar triangle omplert en comptes de wireframe
-        //convertim a Vector2 i cridem a la funció de dibuixar triangle (omplert)
+        //convertim a Vector2 i cridem a la funciÃ³ de dibuixar triangle (omplert)
         Vector2 tv0((int)s0.x, (int)s0.y); 
         Vector2 tv1((int)s1.x, (int)s1.y);
         Vector2 tv2((int)s2.x, (int)s2.y);

@@ -153,6 +153,10 @@ public:
 	Vector2 mouse_position; // Last mouse position
 	Vector2 mouse_delta; // Mouse movement in the last frame
 
+	// last raw mouse position used by OnMouseMove to compute deltas
+	int last_mouse_x = 0;
+	int last_mouse_y = 0;
+
 	void OnKeyPressed(SDL_KeyboardEvent event);
 	void OnMouseButtonDown(SDL_MouseButtonEvent event);
 	void OnMouseButtonUp(SDL_MouseButtonEvent event);

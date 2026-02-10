@@ -129,6 +129,10 @@ public:
 	Vector3 Cross( const Vector3& v ) const;
 	Vector2 GetVector2() { return Vector2(x, y); }
 
+	// convenience operators
+	void operator += (const Vector3& v) { x += v.x; y += v.y; z += v.z; }
+	void operator -= (const Vector3& v) { x -= v.x; y -= v.y; z -= v.z; }
+
 	void Random(float range);
 	void Random(Vector3 range);
 	void Clamp(float min, float max);

@@ -16,6 +16,12 @@ Application::Application(const char* caption, int width, int height) { //constru
 	this->keystate = SDL_GetKeyboardState(nullptr); //obtenir estat teclat 
 
 	this->framebuffer.Resize(w, h);//inicialitzar framebuffer amb dimensions de la finestra
+
+	// initialize last mouse positions
+	int mx, my;
+	SDL_GetMouseState(&mx, &my);
+	last_mouse_x = mx;
+	last_mouse_y = my;
 }
 
 Application::~Application(){ 
@@ -68,41 +74,50 @@ void Application::Init(void) { //inicialitza l'aplicació
     preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
     */
 
-
-
 	//--------------------LAB2-----------------------
 	//INICIALITZACIO DE LA MALLA, ENTITATS I CÀMERA
-	Mesh* m = new Mesh(); //crear nova malla
-	m->LoadOBJ("meshes/lee.obj"); //carregar malla de lee (2.4)
+	Mesh* m = new Mesh();
+	m->LoadOBJ("meshes/lee.obj");
 
-    //crear les 3 entitats amb la malla carregada i posar-les a diferents posicions
-	for (int i = 0; i < 3; i++) {// i < x --> x = número d'entitats a crear
-        Entity* ent = new Entity(m); //crear entitat amb la malla carregada
+	//crear les 3 entitats amb la malla carregada i posar-les a diferents posicions
+	for (int i = 0; i < 3; i++) {
+		Entity* ent = new Entity(m);
 
-		//inicialitzar la matriu de model per a cada entitat: translació + rotació + escala
-		Matrix44 m_trans; m_trans.MakeTranslationMatrix((i - 1) * 6.0f, 0.0f, 0.0f); //matriu de translació --> per separar les entitats (posar a -6, 0, 0), (0, 0, 0) i (6, 0, 0)
-		Matrix44 m_rot; m_rot.MakeRotationMatrix(3.14159f, Vector3(1, 0, 0)); //matriu de rotació --> per posar la malla dreta (rotar 180 graus al voltant de l'eix X)
-		Matrix44 m_scale; //matriu d'escala --> per veure millor les malles 
+		//inicialitzar la matriu de model per a cada entitat
+		Matrix44 m_trans;
+		m_trans.MakeTranslationMatrix((i - 1) * 6.0f, 0.0f, 0.0f);
 
-		float scale_factor = 3.0f; //factor d'escala per a les entitats --> (sx, sy, sz) = (3, 3, 3)
-		m_scale.MakeScaleMatrix(scale_factor, scale_factor, scale_factor); //matriu d'escala amb el factor d'escala (sx, sy, sz)
+		Matrix44 m_rot;
+		m_rot.MakeRotationMatrix(3.14159f, Vector3(1, 0, 0)); // Rotació 180° en X per posar-lo dret
 
-        // Ordre: Model = Translation * Rotation * Scale (T * R * S)
-		ent->model = m_trans * m_rot * m_scale; //matriu de modelat = translació * rotació * escala
+		Matrix44 m_scale;
+		float scale_factor = 5.0f;
+		m_scale.MakeScaleMatrix(scale_factor, scale_factor, scale_factor);
 
-        ent->time = i * 1.0f; //desfasament temporal per variar animacions
-        entities.push_back(ent); //afegir l'entitat al vector d'entitats per a que es renderitzi després 
-    }
-	camera = new Camera(); //nova càmera
-    // Eye (on estàs), Center (on mires), Up (quin eix és el cel)
+		// Ordre: Model = Translation * Rotation * Scale (T * R * S)
+		ent->model = m_trans * m_rot * m_scale;
 
-	//camera LOOKAT: posició de la càmera, punt al que mira i vector up
-	camera->LookAt(Vector3(0, 5, 12), Vector3(0, 0, 0), Vector3(0, 1, 0)); //posició inicial de la càmera
+		ent->time = i * 1.0f;
+		entities.push_back(ent);
+	}
 
-	//camera PERSPECTIVE: fov, aspect ratio, planol daprop, planol llunya
-	camera->SetPerspective(60, window_width / (float)window_height, 0.1f, 900.0f); //projecció inicial de la càmera
+	camera = new Camera();
+
+	// POSICIÓ INICIAL MILLOR: més aprop i mirant directament al centre
+	camera->LookAt(
+		Vector3(0, 8, 25),    // Eye: més aprop (era 12, ara 15 està bé, o prova amb 10-12 per més aprop)
+		Vector3(0, 3, 0),     // Center: mirant al centre on estan les entitats
+		Vector3(0, 1, 0)      // Up: eix Y cap amunt
+	);
+
+	//configuració de perspectiva 
+	camera->SetPerspective(
+		45.0f,                              //FOV
+		window_width / (float)window_height, //aspect ratio
+		0.1f,                               //Near plane 
+		200.0f                              //Far plane 
+	);
 }
-
 void Application::Render(void) { //renderitza l'aplicació
 	
 	//camera SETPERSPECTIVE: fov, aspect ratio, planol daprop, planol llunya
@@ -127,14 +142,13 @@ void Application::Render(void) { //renderitza l'aplicació
 	}
 
     //MODE 1: dibuixar UNA SOLA ENTITAT (sense animació)
-	else if (current_mode == 1) { 
-		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
-		if (!entities.empty()) { //comprovar que hi ha entitats carregades
-			// dibuixar només la primera entitat
-			entities[0]->Render(&framebuffer, camera, Color::WHITE); //renderitzar l'entitat al framebuffer amb la càmera i color blanc
+	else if (current_mode == 1) {
+		framebuffer.Fill(Color::BLACK);
+		if (entities.size() >= 2) {
+			entities[1]->Render(&framebuffer, camera, Color::WHITE);  // La del mig → centre
 		}
-		framebuffer.Render(); //mostrar framebuffer a la finestra
-		return; //SORTIR
+		framebuffer.Render();
+		return;
 	}
 
 	//-----------------LAB1: EINA DE DIBUIX---------------------------
@@ -168,6 +182,11 @@ void Application::Render(void) { //renderitza l'aplicació
 		default:
 			break; //no fer res
 		}
+        else if (event.button == SDL_BUTTON_RIGHT) {
+            // reset last mouse sample to avoid large jump when starting panning
+            last_mouse_x = event.x;
+            last_mouse_y = event.y;
+        }
 	}
 
 	for (auto& b : buttons) //renderitzar tots els botons
@@ -311,8 +330,13 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
 
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (PRESS)
-	
-	//LAB1 - Només processar l'inici de dibuix si estem en mode Paint (mode 0)
+    // Reset last mouse when starting a mouse interaction to avoid jump deltas
+    if (event.button == SDL_BUTTON_RIGHT) {
+        last_mouse_x = event.x;
+        last_mouse_y = event.y;
+    }
+
+    //LAB1 - Només processar l'inici de dibuix si estem en mode Paint (mode 0)
     /*if (current_mode == 0) {
         if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
             Vector2 mouse(event.x, window_height - event.y); 
@@ -349,7 +373,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
             current_pos = mouse; //guardar la posició actual del ratolí
         }
     }
-	*/
+    */
 }
 
 
@@ -390,103 +414,93 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATO
 
 
 
-void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
-	static int last_x = event.x;
-	static int last_y = event.y;
+void Application::OnMouseMove(SDL_MouseButtonEvent event)
+{
+    int xrel = event.x - last_mouse_x;
+    int yrel = event.y - last_mouse_y;
 
-	int xrel = event.x - last_x;
-	int yrel = event.y - last_y;
+    last_mouse_x = event.x;
+    last_mouse_y = event.y;
+    // ────────────────────────────────────────────────
+    // Modes 1 i 2 → control de càmera 3D (LAB 2)
+    // ────────────────────────────────────────────────
+    int mx, my;
+    Uint32 buttons = SDL_GetMouseState(&mx, &my);
 
-	last_x = event.x;
-	last_y = event.y;
+    bool left_pressed = (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
+    bool right_pressed = (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
 
-	// LAB1: Si estem en mode Paint (0) fem la funcionalitat de dibuix
-	if (current_mode == 0) {
-		Vector2 mouse(event.x, window_height - event.y);
-		current_pos = mouse;
+    float sensitivity = 0.005f;   // orbit sensitivity (ajusta si cal)
 
-		if (is_drawing) {
-			Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
+    if (left_pressed)   // ── ORBIT ── Botó esquerre premut
+    {
+        Vector3 view = camera->eye - camera->center;
 
-			switch (current_tool) {
-			case TOOL_PENCIL:
-			case TOOL_ERASER:
-				framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
-				start_pos = current_pos;
-				break;
-			default:
-				break;
-			}
-		}
-	}
+        // Rotació horitzontal (Y global)
+        Matrix44 rot_y;
+        rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0));
+        view = rot_y * view;
 
-	//LAB2: MODE 1/2: CÀMERA (single o multiple entities)
-	else
-	{
-		int mx, my;
-		Uint32 buttons = SDL_GetMouseState(&mx, &my);
+        // Rotació vertical (eix right local)
+        Vector3 right = view.Cross(camera->up).Normalize();
+        Matrix44 rot_x;
+        rot_x.MakeRotationMatrix(-yrel * sensitivity, right);
+        view = rot_x * view;
 
-		// BOTÓ ESQUERRE (ORBIT - Rotació de l'EYE al voltant del CENTER)
-		if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
-		{
-			float sensitivity = 0.01f;
+        camera->eye = camera->center + view;
 
-			//obtenim el vector de visió (des del centre cap a l'ull)
-			Vector3 view = camera->eye - camera->center;
+        camera->UpdateViewMatrix();
+    }
 
-			//rotació Horitzontal (Eix Y global)
-			Matrix44 rot_y;
-			rot_y.MakeRotationMatrix(-xrel * sensitivity, Vector3(0, 1, 0));
-			view = rot_y.RotateVector(view);
+    if (right_pressed)   // ── PAN ── Botó dret premut
+    {
+        // Compute camera basis for panning
+        Vector3 forward = (camera->center - camera->eye).Normalize();
+        Vector3 right = forward.Cross(camera->up).Normalize();
+        Vector3 up = right.Cross(forward).Normalize();
 
-			//rotació Vertical (Eix local "right")
-			Vector3 right = view.Cross(camera->up).Normalize();
-			Matrix44 rot_x;
-			rot_x.MakeRotationMatrix(-yrel * sensitivity, right);
-			view = rot_x.RotateVector(view);
+        float dist = (camera->eye - camera->center).Length();
+        float pan_speed = 0.04f * dist;
 
-			//actualitzar la posició de l'ull mantenint el centre fix
-			camera->eye = camera->center + view;
-		}
+        // delta in world units (mouse right -> pan right). invert Y to match screen coordinates
+        Vector3 delta = (right * (xrel * pan_speed)) - (up * (yrel * pan_speed));
 
-		// BOTÓ DRET (PANNING - Mou el CENTER i l'EYE junts)
-		else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
-		{
-			//calculem els vectors de la càmera
-			Vector3 front = (camera->center - camera->eye).Normalize();
-			Vector3 right = front.Cross(camera->up).Normalize();
-			Vector3 top = right.Cross(front).Normalize();
+        // Move only the center (target) so the right-click pan updates the focus only
+        camera->center += delta;
 
-			//velocitat proporcional a la distància
-			float speed = 0.01f * camera->eye.Distance(camera->center);
+        camera->UpdateViewMatrix();
+    }
 
-			//desplaçament lateral i vertical
-			Vector3 movement = (right * -xrel * speed) + (top * yrel * speed);
-
-			//aplicar el moviment a ambdós (eye i center) per mantenir l'orientació
-			camera->eye = camera->eye + movement;
-			camera->center = camera->center + movement;
-		}
-	}
+    // Nota: si vols que el pan mogui eye i centre junts (com en alguns programes),
+    // pots fer camera->eye += delta; també.
+    // Però segons el lab: "The center (target) of the camera should be interactive using the mouse (right button)."
+    // → només moure center és el que demana
 }
 
-
-void Application::OnWheel(SDL_MouseWheelEvent event) //detecta scroll del ratoli
+void Application::OnWheel(SDL_MouseWheelEvent event)
 {
 	float dy = event.preciseY;
 
-	//zoom amb la roda del ratolí: moure la càmera cap a dins/fora al llarg de la línia de visió (modes 1 i 2)
-	if (current_mode != 0) //nomes modes 1 i 2 (no mode paint)
+	// Zoom amb la roda del ratolí (modes 1 i 2)
+	if (current_mode != 0)
 	{
-		float zoom_speed = 0.02f; //velocitat 
+		float zoom_speed = 1.0f; // Velocitat de zoom
 
-		//vector de direcció de la càmera (des del centre fins a l'ull)
-		Vector3 view_vector = camera->center - camera->eye;
+		// Vector de direcció normalitzat (des de l'eye cap al center)
+		Vector3 direction = (camera->center - camera->eye).Normalize();
 
-		//moure el eye de la càmera al llarg del vector de visió segons la direcció del scroll
-			//si dy és positiu (rodeta amunt), sumem vector -> ens apropem
-			//si dy és negatiu (rodeta avall), restem vector -> ens allunyem
-		camera->eye = camera->eye + (view_vector * dy * zoom_speed);
+		// Calcular la distància actual
+		float current_distance = camera->eye.Distance(camera->center);
+
+		// Evitar que la càmera passi pel centre o s'allunyi massa
+		float new_distance = current_distance - (dy * zoom_speed);
+
+		// Limitar la distància mínima i màxima
+		if (new_distance < 2.0f) new_distance = 2.0f;     // No més aprop de 2 unitats
+		if (new_distance > 50.0f) new_distance = 50.0f;   // No més lluny de 50 unitats
+
+		// Actualitzar la posició de l'eye mantenint la direcció
+		camera->eye = camera->center - (direction * new_distance);
 	}
 }
 
