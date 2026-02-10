@@ -105,9 +105,9 @@ void Application::Init(void) { //inicialitza l'aplicació
 
 	// POSICIÓ INICIAL MILLOR: més aprop i mirant directament al centre
 	camera->LookAt(
-		Vector3(0, 8, 25),    // Eye: més aprop (era 12, ara 15 està bé, o prova amb 10-12 per més aprop)
-		Vector3(0, 3, 0),     // Center: mirant al centre on estan les entitats
-		Vector3(0, 1, 0)      // Up: eix Y cap amunt
+		Vector3(0, -1, 8),    // Eye: 
+		Vector3(0, -1, 0),     // Center: 
+		Vector3(0, 1, 0)      // Up: 
 	);
 
 	//configuració de perspectiva 
