@@ -30,50 +30,6 @@ Application::~Application(){
 void Application::Init(void) { //inicialitza l'aplicació
 	std::cout << "Initiating app..." << std::endl;
 
-    //--------------------LAB1-----------------------
-    /*
-    //carregar icones
-    Image pencil_img;  pencil_img.LoadPNG("images/pencil.png");
-    Image line_img;    line_img.LoadPNG("images/line.png");
-    Image rect_img;    rect_img.LoadPNG("images/rectangle.png");
-    Image tri_img;     tri_img.LoadPNG("images/triangle.png");
-    Image eraser_img;  eraser_img.LoadPNG("images/eraser.png");
-    Image clear_img;   clear_img.LoadPNG("images/clear.png");
-    Image load_img;    load_img.LoadPNG("images/load.png");
-    Image save_img;    save_img.LoadPNG("images/save.png");
-    Image red_img;     red_img.LoadPNG("images/red.png");
-    Image green_img;   green_img.LoadPNG("images/green.png");
-    Image blue_img;    blue_img.LoadPNG("images/blue.png");
-
-    int x = 10; //posició fixa
-    int y = 10; //posició inicial
-    int sep = 5; //separació entre botons
-
-    //EINES --> Button(icona, posició, tipus)
-    buttons.push_back(Button(pencil_img, Vector2(x, y), BUTTON_PENCIL)); y += pencil_img.height + sep; //llapis
-    buttons.push_back(Button(line_img, Vector2(x, y), BUTTON_LINE));   y += line_img.height + sep; //línia
-    buttons.push_back(Button(rect_img, Vector2(x, y), BUTTON_RECT));   y += rect_img.height + sep; //rectangle
-    buttons.push_back(Button(tri_img, Vector2(x, y), BUTTON_TRIANGLE)); y += tri_img.height + sep; //triangle
-    buttons.push_back(Button(eraser_img, Vector2(x, y), BUTTON_ERASER)); y += eraser_img.height + sep; //goma
-
-    y += 10; //separació entre grups
-
-    //COLORS
-    buttons.push_back(Button(red_img, Vector2(x, y), BUTTON_COLOR_RED));   y += red_img.height + sep; //boto color vermell
-    buttons.push_back(Button(green_img, Vector2(x, y), BUTTON_COLOR_GREEN)); y += green_img.height + sep; //boto color verd
-    buttons.push_back(Button(blue_img, Vector2(x, y), BUTTON_COLOR_BLUE));  y += blue_img.height + sep; //boto color blau
-
-    y += 10; // separació entre grups
-
-    // ACCIONS
-    buttons.push_back(Button(clear_img, Vector2(x, y), BUTTON_CLEAR)); y += clear_img.height + sep; //boto netejar
-    buttons.push_back(Button(load_img, Vector2(x, y), BUTTON_LOAD));  y += load_img.height + sep; //boto carregar
-    buttons.push_back(Button(save_img, Vector2(x, y), BUTTON_SAVE)); //boto desar
-
-    framebuffer.Fill(Color::BLACK); //inicialitzar el framebuffer a negre per al LAB 2
-    preview_framebuffer = framebuffer; //inicialitzar el framebuffer de previsualització
-    */
-
 	//--------------------LAB2-----------------------
 	//INICIALITZACIO DE LA MALLA, ENTITATS I CÀMERA
 	Mesh* m = new Mesh();
@@ -107,7 +63,7 @@ void Application::Init(void) { //inicialitza l'aplicació
 
 	camera = new Camera();
 
-	// POSICIÓ INICIAL MILLOR: més aprop i mirant directament al centre
+	// POSICIÓ INICIAL 
 	camera->LookAt(
 		Vector3(0, -1, 8),    // Eye: 
 		Vector3(0, -1, 0),     // Center: 
@@ -161,50 +117,6 @@ void Application::Render(void) { //renderitza l'aplicació
 		framebuffer.Render();
 		return;
 	}
-
-	//-----------------LAB1: EINA DE DIBUIX---------------------------
-	/*preview_framebuffer = framebuffer; //copiar el framebuffer al de previsualització
-
-	if (is_drawing && (start_pos.x != current_pos.x || start_pos.y != current_pos.y)) { //si s'està dibuixant i la posició inicial és diferent de l'actual
-		Color preview = Color(0.0f, 0.0f, 0.0f); //color de previsualització
-
-		switch (current_tool) { //eina actual
-		case TOOL_LINE: //linia
-			preview_framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, preview); //dibuixar línia de previsualització
-			break;
-
-		case TOOL_RECT: { //rectangle
-			int x = std::min(start_pos.x, current_pos.x); //x minima
-			int y = std::min(start_pos.y, current_pos.y); //y minima
-			int w = std::abs(current_pos.x - start_pos.x); //amplada
-			int h = std::abs(current_pos.y - start_pos.y); //altura
-			preview_framebuffer.DrawRect(x, y, w, h, preview, border_width, fill_shapes, preview); //dibuixar rectangle de previsualització
-			break;
-		}
-
-		case TOOL_TRIANGLE: { //triangle 
-			Vector2 p0 = start_pos; //punt superior
-			Vector2 p1(current_pos.x, start_pos.y); //punt inferior dret
-			Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y); //punt inferior esquerra
-			preview_framebuffer.DrawTriangle(p0, p1, p2, preview, fill_shapes, preview); //dibuixar triangle de previsualització 
-			break;
-		}
-
-		default:
-			break; //no fer res
-		}
-        else if (event.button == SDL_BUTTON_RIGHT) {
-            // reset last mouse sample to avoid large jump when starting panning
-            last_mouse_x = event.x;
-            last_mouse_y = event.y;
-        }
-	}
-
-	for (auto& b : buttons) //renderitzar tots els botons
-		b.Render(preview_framebuffer); //dibuixar botó al framebuffer de previsualització
-
-	preview_framebuffer.Render(); //mostrar el framebuffer de previsualització a la finestra
-    */
 }
 
 //actualittza l'aplicacio en funcio del temps que ha passat
@@ -340,186 +252,69 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
 }
 
 
+// Handle mouse motion events (used for camera orbit/pan)
+void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
+    int x = event.x;
+    int y = event.y;
+
+    int xrel = x - last_mouse_x;
+    int yrel = y - last_mouse_y;
+
+    last_mouse_x = x;
+    last_mouse_y = y;
+
+    // Only process when in 3D modes
+    if (current_mode == 0) return;
+
+    // get current mouse buttons state
+    int buttons = SDL_GetMouseState(NULL, NULL);
+
+    // Orbit with left button
+    if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+        float sensitivity = 0.005f;
+        float angY = -xrel * sensitivity;
+        // invert vertical rotation sign so moving mouse up rotates camera up
+        float angX = yrel * sensitivity;
+
+        // vector from center to eye
+        Vector3 dir = camera->eye - camera->center;
+
+        // rotate around up (Y) axis
+        Matrix44 rotY; rotY.MakeRotationMatrix(angY, camera->up);
+        dir = rotY.RotateVector(dir);
+
+        // compute right axis and rotate around it
+        Vector3 right = camera->up.Cross(dir).Normalize();
+        Matrix44 rotX; rotX.MakeRotationMatrix(angX, right);
+        dir = rotX.RotateVector(dir);
+
+        camera->eye = camera->center + dir;
+    }
+    // Pan with right button
+    else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
+        float panSpeed = 0.01f;
+        Vector3 forward = (camera->center - camera->eye).Normalize();
+        Vector3 right = forward.Cross(camera->up).Normalize();
+
+        // Invert vertical mouse delta to make upward mouse movement pan the camera up
+        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
+        camera->center += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
+    }
+}
+
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (PRESS)
-    // Reset last mouse when starting a mouse interaction to avoid jump deltas
-    if (event.button == SDL_BUTTON_RIGHT) {
-        last_mouse_x = event.x;
-        last_mouse_y = event.y;
-    }
-
-    //LAB1 - Només processar l'inici de dibuix si estem en mode Paint (mode 0)
-    /*if (current_mode == 0) {
-        if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
-            Vector2 mouse(event.x, window_height - event.y); 
-            for (auto& b : buttons) { //recorre=er tots els botons
-                if (b.IsMouseInside(mouse)) {
-                    //reset de preview per evitar figures fantasma
-                    is_drawing = false; //indicar que no s'està dibuixant
-                    start_pos = Vector2(-1, -1); //posició inicial fora de la pantalla
-                    current_pos = Vector2(-1, -1); //posició actual fora de la pantalla
-                    switch (b.type) { //tipus de botó
-                    case BUTTON_PENCIL: current_tool = TOOL_PENCIL; break; 
-                    case BUTTON_LINE: current_tool = TOOL_LINE; break;
-                    case BUTTON_RECT: current_tool = TOOL_RECT; break;
-                    case BUTTON_TRIANGLE: current_tool = TOOL_TRIANGLE; break;
-                    case BUTTON_ERASER: current_tool = TOOL_ERASER; break;
-
-                    case BUTTON_COLOR_RED: current_color = Color::RED; break;
-                    case BUTTON_COLOR_GREEN: current_color = Color::GREEN; break;
-                    case BUTTON_COLOR_BLUE: current_color = Color::BLUE; break;
-
-                    case BUTTON_CLEAR: framebuffer.Fill(Color::WHITE); break;
-                    case BUTTON_LOAD: framebuffer.LoadPNG("images/fruits.png"); break;
-                    case BUTTON_SAVE: framebuffer.SaveTGA("output.tga"); break;
-                    }
-                    return;
-                }
-
-
-            }
-
-            //si no ha clicat cap botó → comencem a dibuixar
-            is_drawing = true; //indicar que s'està dibuixant
-            start_pos = mouse; //guardar la posició inicial del ratolí
-            current_pos = mouse; //guardar la posició actual del ratolí
-        }
-    }
-    */
+    // Reset last mouse when starting any mouse interaction to avoid jump deltas
+    last_mouse_x = event.x;
+    last_mouse_y = event.y;
 }
 
 
 void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (RELEASE)
-	//LAB1 - Només processar el final del dibuix si estem en mode Paint (mode 0)
-    /*if (current_mode == 0) {
-        if (event.button == SDL_BUTTON_LEFT) { //si és el botó esquerre
-            is_drawing = false; //indicar que s'ha deixat de dibuixar
-
-            Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color; //color de dibuix (blanc si és goma, sinó el color actual)
-
-            switch (current_tool) { //eina actual
-            case TOOL_LINE: //línia
-                framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
-                break;
-
-            case TOOL_RECT: { //rectangle --> variables per a les dimensions(4)
-                int x = std::min(start_pos.x, current_pos.x);
-                int y = std::min(start_pos.y, current_pos.y);
-                int w = std::abs(current_pos.x - start_pos.x);
-                int h = std::abs(current_pos.y - start_pos.y);
-                framebuffer.DrawRect(x, y, w, h, draw_color, border_width, fill_shapes, draw_color);
-                break;
-            }
-
-            case TOOL_TRIANGLE: { //triangle --> punts del triangle(3)
-                Vector2 p0 = start_pos;
-                Vector2 p1(current_pos.x, start_pos.y);
-                Vector2 p2((start_pos.x + current_pos.x) * 0.5f, current_pos.y);
-                framebuffer.DrawTriangle(p0, p1, p2, draw_color, fill_shapes, draw_color);
-                break;
-            }
-            }
-        }
-    }
-	*/
 }
 
 
 
-void Application::OnMouseMove(SDL_MouseButtonEvent event)
-{
-    static int last_x = event.x;
-    static int last_y = event.y;
-
-    int xrel = event.x - last_x;
-    int yrel = event.y - last_y;
-
-    last_x = event.x;
-    last_y = event.y;
-
-    // Mode paint (LAB1) ─ no tocar
-    if (current_mode == 0)
-    {
-        Vector2 mouse(event.x, window_height - event.y);
-        current_pos = mouse;
-
-        if (is_drawing)
-        {
-            Color draw_color = (current_tool == TOOL_ERASER) ? Color::WHITE : current_color;
-            switch (current_tool)
-            {
-            case TOOL_PENCIL:
-            case TOOL_ERASER:
-                framebuffer.DrawLineDDA(start_pos.x, start_pos.y, current_pos.x, current_pos.y, draw_color);
-                start_pos = current_pos;
-                break;
-            default:
-                break;
-            }
-        }
-        return;
-    }
-
-    // ────────────────────────────────────────────────
-    // Modes 1 i 2: control 3D amb mouse state
-    // ────────────────────────────────────────────────
-    int mx, my;
-    Uint32 buttons = SDL_GetMouseState(&mx, &my);
-
-    bool left_pressed = (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
-    bool right_pressed = (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
-
-    float orbit_sensitivity = 0.005f;   // ajusta si vols més/menys ràpid
-    float pan_sensitivity = 0.035f;   // ajusta segons distància
-
-    // ── ORBIT ── Botó esquerre premut
-    if (left_pressed)
-    {
-        Vector3 view = camera->eye - camera->center;
-
-        // Rotació horitzontal (Y global) ─ signe invertit per natural
-        Matrix44 rot_y;
-        rot_y.MakeRotationMatrix(-xrel * orbit_sensitivity, Vector3(0, 1, 0));
-        view = rot_y * view;
-
-        // Rotació vertical (eix right local)
-        Vector3 right = view.Cross(camera->up).Normalize();
-        Matrix44 rot_x;
-        rot_x.MakeRotationMatrix(-yrel * orbit_sensitivity, right);
-        view = rot_x * view;
-
-        camera->eye = camera->center + view;
-
-        camera->UpdateViewMatrix();
-    }
-
-    // ── PAN ── Botó dret premut → MOU NOMÉS CENTER
-    if (right_pressed)
-    {
-        // Vectors locals de la càmera
-        Vector3 forward = (camera->center - camera->eye).Normalize();
-        Vector3 right = forward.Cross(camera->up).Normalize();
-        Vector3 up = right.Cross(forward).Normalize();  // up ortogonal real
-
-        // Velocitat proporcional a la distància actual (més lluny → mou més)
-        float dist = (camera->eye - camera->center).Length();
-        float speed = pan_sensitivity * dist;
-
-        // Delta en espai món
-        float dx = -xrel * speed;   // ── signe ── mou centre en la direcció del ratolí
-        float dy = -yrel * speed;   // ── signe ── (ajusta si vols invertir)
-
-        // Aplicar sense +=  (obligatori pel teu framework)
-        camera->center.x += right.x * dx + up.x * dy;
-        camera->center.y += right.y * dx + up.y * dy;
-        camera->center.z += right.z * dx + up.z * dy;
-
-        camera->UpdateViewMatrix();
-    }
-}
-
-
-
-void Application::OnWheel(SDL_MouseWheelEvent event)
+void Application::OnWheel(SDL_MouseWheelEvent event) //ZOOM AMB LA RODA DEL RATOLI
 {
 	float dy = event.preciseY;
 
