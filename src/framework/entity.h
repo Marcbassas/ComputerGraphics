@@ -17,15 +17,15 @@ public:
 	
 	float time;
 
-	// rendering mode for the entity
+	//rendering mode for the entity
 	enum class eRenderMode { POINTCLOUD, WIREFRAME, TRIANGLES, TRIANGLES_INTERPOLATED };
 	eRenderMode mode = eRenderMode::TRIANGLES_INTERPOLATED;
 
-	// toggles
-	bool use_texture = true; // T: use mesh texture vs color per vertex
-	bool interpolate_uvs = true; // C: interpolated UVs vs plain color
+	//opcions de renderitzat
+	bool use_texture = true; //T: utilitzar textura vs color pla
+	bool interpolate_uvs = true; //C: utilitzar UVs interpolades vs UVs pla (UV del vèrtex 0 per a tot el triangle) 
 
-	// flat color used when interpolate_uvs is false
+	//flat_color blanc per a renderitzat amb color pla (sense textura ni interpolació de color) --> només s'utilitza quan mode == TRIANGLES i interpolate_uvs == false (UVs pla)
 	Color flat_color = Color::WHITE;
 
 	//metodes

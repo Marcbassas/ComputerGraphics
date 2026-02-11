@@ -1,5 +1,5 @@
 ﻿#include "entity.h"
-#include <cmath> // Necessari per sin i cos
+#include <cmath> 
 #include <map>   
 
 
@@ -13,14 +13,14 @@ Entity::Entity(){
 
 Entity::Entity(Mesh* mesh) { //constructor amb malla
 	this->mesh = mesh; //punter a la malla
-	model.SetIdentity();
-	texture = nullptr;
+	model.SetIdentity(); //inicialitzar la matriu de modelat a la matriu identitat (sense transformacions)
+	texture = nullptr; //textura = nullptr per defecte 
 	this->time = 0.0f; //temps = 0 per començar l'animació des del principi
 }
 
 //actualittza l'aplicacio en funcio del temps que ha passat
 void Entity::Update(float seconds_elapsed) {
-	this->time += seconds_elapsed;
+	this->time += seconds_elapsed; //actualitza el temps acumulat de l'entitat amb el temps transcorregut des de l'última actualització
 
 	float rotation_speed = 2.0f;          //rotació contínua
 	float animation_speed = this->time * 3.0f; //velocitat de l'animació oscil·lant (pulsació i reboteig) --> multipliquem el temps per un factor per controlar la velocitat de l'oscil·lació
@@ -103,15 +103,13 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 */
 
 void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
-	if (!mesh) return;
+	if (!mesh) return; //si no hi ha malla --> no es pot renderitzar res --> sortim de la funció
 
 	const auto& vertices = mesh->GetVertices(); //punter a la llista de vèrtexs de la malla
 	const auto& uvs = mesh->GetUVs(); //punter a la llista de coordenades UV de la malla
 
 	auto inside_clip = [](const Vector3& p)->bool { //funcio per comprovar si un punt està dins del frustum de càmera (clip space)
-		return p.x >= -1 && p.x <= 1 &&
-			p.y >= -1 && p.y <= 1 &&
-			p.z >= -1 && p.z <= 1;
+		return p.x >= -1 && p.x <= 1 && p.y >= -1 && p.y <= 1 && p.z >= -1 && p.z <= 1; //si algun vertex esta fora del rang es rebutjat
 		};
 
 	for (size_t i = 0; i + 2 < vertices.size(); i += 3) //iterar sobre els vèrtexs de 3 en 3 (triangles)
@@ -144,61 +142,61 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
 		s2.y = (1 - (s2.y + 1) * 0.5f) * framebuffer->height;
 
 		switch (mode) {
-		case eRenderMode::POINTCLOUD: {
-			// draw vertices only
+		case eRenderMode::POINTCLOUD: { 
+			//dibuixar nomes els vèrtexs del triangle com a punts blancs
 			framebuffer->SetPixel((int)s0.x, (int)s0.y, Color::WHITE);
 			framebuffer->SetPixel((int)s1.x, (int)s1.y, Color::WHITE);
 			framebuffer->SetPixel((int)s2.x, (int)s2.y, Color::WHITE);
 			break;
 		}
 		case eRenderMode::WIREFRAME: {
-			// draw triangle edges
+			//dibuixar les arestes del triangle com a línies blanques
 			framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, Color::WHITE);
 			framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, Color::WHITE);
 			framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, Color::WHITE);
 			break;
 		}
 		case eRenderMode::TRIANGLES: {
-			// plain triangle (no interpolation) fill with white for simplicity
-			sTriangleInfo info;
-			info.v[0] = s0; info.v[1] = s1; info.v[2] = s2;
-			info.c[0] = Color::WHITE; info.c[1] = Color::WHITE; info.c[2] = Color::WHITE;
+			//dibuixar el triangle com un color pla (blanc) sense interpolació de color ni textura
+			sTriangleInfo info; //informacio del triangle  
+			info.v[0] = s0; info.v[1] = s1; info.v[2] = s2; //vèrtexs del triangle en coordenades de pantalla
+			info.c[0] = Color::WHITE; info.c[1] = Color::WHITE; info.c[2] = Color::WHITE; //color pla (blanc) per a tots els vèrtexs
 			info.texture = nullptr;
-			framebuffer->DrawTriangleInterpolated(info, zbuffer);
+			framebuffer->DrawTriangleInterpolated(info, zbuffer); //dibuixar el triangle amb la funció de dibuix interpolat però sense interpolació de color ni textura (color pla) 
 			break;
 		}
-		case eRenderMode::TRIANGLES_INTERPOLATED:
+		case eRenderMode::TRIANGLES_INTERPOLATED: 
 		default: {
 			sTriangleInfo info;
-			info.v[0] = s0; info.v[1] = s1; info.v[2] = s2;
+			info.v[0] = s0; info.v[1] = s1; info.v[2] = s2; //vèrtexs del triangle en coordenades de pantalla
 
-			if (!uvs.empty()) {
+			if (!uvs.empty()) { //si la malla té coordenades UV --> les assignem a la informació del triangle per a que es puguin utilitzar en el dibuix amb textura
 				info.uv[0] = uvs[i];
 				info.uv[1] = uvs[i + 1];
 				info.uv[2] = uvs[i + 2];
 			}
 
-			info.texture = (use_texture && texture) ? texture : nullptr;
-			info.interpolate_uvs = interpolate_uvs; // només per al cas amb textura
+			info.texture = (use_texture && texture) ? texture : nullptr; //si use_texture es true i hi ha una textura assignada a l'entitat --> utilitzar-la, sinó no utilitzar textura (nullptr)
+			info.interpolate_uvs = interpolate_uvs; //només per al cas amb textura
 
 			if (info.texture) {
-				// amb textura: C controla UVs interpolades vs UV pla
+				//amb textura: C controla UVs interpolades vs UV pla
 				info.c[0] = info.c[1] = info.c[2] = Color::WHITE;
 			}
 			else {
-				// SENSE textura: C controla degradat vs color pla
+				//SENSE textura: C controla degradat vs color pla
 				if (interpolate_uvs) {
-					// C ON → degradat RGB
+					//C ON → degradat RGB
 					info.c[0] = Color::RED;
 					info.c[1] = Color::GREEN;
 					info.c[2] = Color::BLUE;
 				}
 				else {
-					// C OFF → color pla (blanc)
+					//C OFF → color pla (blanc)
 					info.c[0] = info.c[1] = info.c[2] = Color::WHITE;
 				}
 
-				// en mode color, no cal que DrawTriangleInterpolated miri interpolate_uvs
+				//en mode color, no cal que DrawTriangleInterpolated miri interpolate_uvs
 				info.interpolate_uvs = false;
 			}
 
