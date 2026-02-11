@@ -14,139 +14,105 @@ Image::Image() {
 	pixels = NULL;
 }
 
-/*
+
 //dibuixar un triangle amb interpolació de color per vèrtexs (LAB3: 3.2)
-void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2) {
-	//calcular el bounding box del triangle per limitar el nombre de píxels a processar
-	//bounding box = rectangle mínim que conté el triangle, definit per les coordenades mínimes i màximes dels vèrtexs del triangle
-	int minX = (int)floor(std::min(std::min(p0.x, p1.x), p2.x)); //coordenada MIN en x del triangle --> calculada com el mínim entre les coordenades x dels 3 vèrtexs
-	int minY = (int)floor(std::min(std::min(p0.y, p1.y), p2.y)); //coordenada MIN en y del triangle --> calculada com el mínim entre las coordenades y dels 3 vèrtexs
-	int maxX = (int)ceil(std::max(std::max(p0.x, p1.x), p2.x)); //coordenada MAX en x del triangle --> calculada como el máximo entre las coordenades x dels 3 vèrtexs
-	int maxY = (int)ceil(std::max(std::max(p0.y, p1.y), p2.y)); //coordenada MAX en y del triangle --> calculada como el máximo entre las coordenades y dels 3 vèrtexs
-
-	//
-	if (minX < 0) minX = 0; //coordenades pantalla -->  x: vector x = (vector x + 1) * 0.5f * framebuffer width
-	if (minY < 0) minY = 0; //coordenades pantalla -->  y: vector y = (1 - (vector y + 1) * 0.5f) * framebuffer height
-	if (maxX >= (int)width)  maxX = (int)width - 1; //coordenades pantalla -->  x: vector x = (vector x + 1) * 0.5f * framebuffer width
-	if (maxY >= (int)height) maxY = (int)height - 1; //coordenades pantalla -->  y: vector y = (1 - (vector y + 1) * 0.5f) * framebuffer height
-
-	//calcular el denominador de les coordenades baricèntriques per evitar calcular-lo per cada píxel
-	//denominador = (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y)
-	//el denominador es el mateix per tots els píxels del triangle,només depèn de les coordenades dels vèrtexs del triangle
-    float denom = ( (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y) );
-	if (fabs(denom) < 1e-6f) return; //si el denom petit --> triangle molt petit o degenerate --> no dibuixem res
-
-	const float eps = 1e-5f; // tolerància per a considerar un píxel com a dins del triangle
-
-	//per cada pixel dins del bounding box, calcular les coordenades baricèntriques i interpolar el color
-	for (int y = minY; y <= maxY; ++y) { //per cada coordenada y dins del bounding box
-		for (int x = minX; x <= maxX; ++x) { //per cada coordenada x dins del bounding box
-			//calcular les coordenades baricèntriques del píxel (x,y) respecte al triangle definit pels vèrtexs p0,p1,p2
-            float px = x + 0.5f; //centre del pixel (x,y)
-            float py = y + 0.5f; 
-
-			float w0 = ((p1.y - p2.y) * (px - p2.x) + (p2.x - p1.x) * (py - p2.y)) / denom; //coordenada baricèntrica respecte al vèrtex p0
-			float w1 = ((p2.y - p0.y) * (px - p2.x) + (p0.x - p2.x) * (py - p2.y)) / denom; //coordenada baricèntrica respecte al vèrtex p1 
-			float w2 = 1.0f - w0 - w1; //coordenada baricèntrica respecte al vèrtex p2 (la suma de les coordenades baricèntriques ha de ser 1)
-
-			//si alguna de les coordenades baricèntres es menor que -eps --> el píxel està fora del triangle (considerant una tolerància eps per evitar problemes numèrics) --> no dibuixem res
-            if (w0 < -eps || w1 < -eps || w2 < -eps)
-                continue;
-
-			//clamp coordenades baricèntriques a 0 per evitar problemes numèrics en la interpolació del color 
-			//coord baricentrica negativa = 0
-            if (w0 < 0.0f) w0 = 0.0f; if (w1 < 0.0f) w1 = 0.0f; if (w2 < 0.0f) w2 = 0.0f;
-            float sum = w0 + w1 + w2;
-            if (sum <= 0.0f) continue;
-            w0 /= sum; w1 /= sum; w2 /= sum;
-
-			//interpolar color del píxel (x,y) com a combinació lineal dels colors dels vèrtexs del triangle, ponderada per les coordenades baricèntriques
-            Color c = c0 * w0 + c1 * w1 + c2 * w2;
-
-            SetPixel(x, y, c);
-        }
-    }
-}
-*/
-
 void Image::DrawTriangleInterpolated(const sTriangleInfo& tri, FloatImage* zbuffer)
 {
-    const Vector3& p0 = tri.v[0];
-    const Vector3& p1 = tri.v[1];
-    const Vector3& p2 = tri.v[2];
+	const Vector3& p0 = tri.v[0];
+	const Vector3& p1 = tri.v[1];
+	const Vector3& p2 = tri.v[2];
 
-    int minX = (int)floor(std::min({ p0.x, p1.x, p2.x }));
-    int minY = (int)floor(std::min({ p0.y, p1.y, p2.y }));
-    int maxX = (int)ceil(std::max({ p0.x, p1.x, p2.x }));
-    int maxY = (int)ceil(std::max({ p0.y, p1.y, p2.y }));
+	int minX = (int)floor(std::min({ p0.x, p1.x, p2.x }));
+	int minY = (int)floor(std::min({ p0.y, p1.y, p2.y }));
+	int maxX = (int)ceil(std::max({ p0.x, p1.x, p2.x }));
+	int maxY = (int)ceil(std::max({ p0.y, p1.y, p2.y }));
 
-    minX = std::max(0, minX);
-    minY = std::max(0, minY);
-    maxX = std::min((int)width - 1, maxX);
-    maxY = std::min((int)height - 1, maxY);
+	minX = std::max(0, minX);
+	minY = std::max(0, minY);
+	maxX = std::min((int)width - 1, maxX);
+	maxY = std::min((int)height - 1, maxY);
 
-    float denom = ((p1.y - p2.y) * (p0.x - p2.x) +
-        (p2.x - p1.x) * (p0.y - p2.y));
+	float denom = ((p1.y - p2.y) * (p0.x - p2.x) +
+		(p2.x - p1.x) * (p0.y - p2.y));
 
-    if (fabs(denom) < 1e-6f) return;
+	if (fabs(denom) < 1e-6f) return;
 
-    const float eps = 1e-5f;
+	const float eps = 1e-5f;
 
-    for (int y = minY; y <= maxY; ++y)
-    {
-        for (int x = minX; x <= maxX; ++x)
-        {
-            float px = x + 0.5f;
-            float py = y + 0.5f;
+	for (int y = minY; y <= maxY; ++y)
+	{
+		for (int x = minX; x <= maxX; ++x)
+		{
+			float px = x + 0.5f;
+			float py = y + 0.5f;
 
-            float w0 = ((p1.y - p2.y) * (px - p2.x) +
-                (p2.x - p1.x) * (py - p2.y)) / denom;
+			float w0 = ((p1.y - p2.y) * (px - p2.x) +
+				(p2.x - p1.x) * (py - p2.y)) / denom;
 
-            float w1 = ((p2.y - p0.y) * (px - p2.x) +
-                (p0.x - p2.x) * (py - p2.y)) / denom;
+			float w1 = ((p2.y - p0.y) * (px - p2.x) +
+				(p0.x - p2.x) * (py - p2.y)) / denom;
 
-            float w2 = 1.0f - w0 - w1;
+			float w2 = 1.0f - w0 - w1;
 
-            if (w0 < -eps || w1 < -eps || w2 < -eps)
-                continue;
+			if (w0 < -eps || w1 < -eps || w2 < -eps)
+				continue;
 
-            if (w0 < 0) w0 = 0;
-            if (w1 < 0) w1 = 0;
-            if (w2 < 0) w2 = 0;
+			if (w0 < 0) w0 = 0;
+			if (w1 < 0) w1 = 0;
+			if (w2 < 0) w2 = 0;
 
-            float sum = w0 + w1 + w2;
-            if (sum <= 0) continue;
+			float sum = w0 + w1 + w2;
+			if (sum <= 0) continue;
 
-            w0 /= sum; w1 /= sum; w2 /= sum;
+			w0 /= sum; w1 /= sum; w2 /= sum;
 
-            // Z-buffer
-            float z = p0.z * w0 + p1.z * w1 + p2.z * w2;
+			// Z-buffer
+			float z = p0.z * w0 + p1.z * w1 + p2.z * w2;
 
-			if (zbuffer) { //si tenim z-buffer --> comprovar si el píxel està ocult o no 
-				//comparant la profunditat interpolada del píxel amb el valor actual del z-buffer en aquesta posicio
-                float& zbuf = zbuffer->GetPixelRef(x, y);
-                if (z > zbuf) continue; // pixel hidden
-                zbuf = z;
-            }
+			if (zbuffer) {
+				float& zbuf = zbuffer->GetPixelRef(x, y);
+				if (z > zbuf) continue;
+				zbuf = z;
+			}
 
-            // Texture or vertex color
-            Color finalColor;
-            if (tri.texture) {
-                Vector2 uv = tri.uv[0] * w0 + tri.uv[1] * w1 + tri.uv[2] * w2;
-                int tx = uv.x * (tri.texture->width - 1);
-                int ty = uv.y * (tri.texture->height - 1);
-                tx = std::max(0, std::min((int)tri.texture->width - 1, tx));
-                ty = std::max(0, std::min((int)tri.texture->height - 1, ty));
-                finalColor = tri.texture->GetPixel(tx, ty);
-            }
-            else {
-                finalColor = tri.c[0] * w0 + tri.c[1] * w1 + tri.c[2] * w2;
-            }
+			Color finalColor;
 
-            SetPixel(x, y, finalColor);
-        }
-    }
+			// ─────────────────────────────────────────────
+			// TEXTURA
+			// ─────────────────────────────────────────────
+			if (tri.texture)
+			{
+				Vector2 uv;
+
+				if (tri.interpolate_uvs) {
+					// C = ON → UVs interpolades
+					uv = tri.uv[0] * w0 + tri.uv[1] * w1 + tri.uv[2] * w2;
+				}
+				else {
+					// C = OFF → UV del primer vèrtex (triangle pla)
+					uv = tri.uv[0];
+				}
+
+				int tx = (int)(uv.x * (tri.texture->width - 1));
+				int ty = (int)(uv.y * (tri.texture->height - 1));
+
+				tx = std::max(0, std::min((int)tri.texture->width - 1, tx));
+				ty = std::max(0, std::min((int)tri.texture->height - 1, ty));
+
+				finalColor = tri.texture->GetPixel(tx, ty);
+			}
+			else {
+				// sense textura → sempre interpolació de colors
+				finalColor = tri.c[0] * w0 + tri.c[1] * w1 + tri.c[2] * w2;
+			}
+
+
+			SetPixel(x, y, finalColor);
+		}
+	}
 }
+
+
 
 
 Image::Image(unsigned int width, unsigned int height)

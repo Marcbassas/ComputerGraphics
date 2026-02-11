@@ -25,6 +25,9 @@ public:
 	bool use_texture = true; // T: use mesh texture vs color per vertex
 	bool interpolate_uvs = true; // C: interpolated UVs vs plain color
 
+	// flat color used when interpolate_uvs is false
+	Color flat_color = Color::WHITE;
+
 	//metodes
 	//void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)
 	void Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer);

@@ -29,6 +29,7 @@ struct sTriangleInfo {
     Color   c[3];   // color per vertex
     Image*  texture; // pointer to texture image (optional)
     sTriangleInfo() { texture = nullptr; }
+	bool interpolate_uvs = true; //
 };
 
 // A matrix of pixels

@@ -184,7 +184,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         break;
     }
 
-    case SDLK_c: // C: toggle interpolate UVs / plain color
+    case SDLK_c:
     {
         for (auto e : entities) e->interpolate_uvs = !e->interpolate_uvs;
         std::cout << "Toggled interpolate_uvs for all entities: " << (entities.size() ? entities[0]->interpolate_uvs : false) << std::endl;
@@ -322,10 +322,9 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOL
 		Vector3 forward = (camera->center - camera->eye).Normalize(); //vector de direcció de la càmera des de l'eye cap al center (normalitzat)
 		Vector3 right = forward.Cross(camera->up).Normalize(); //vector perpendicular a la direcció de la cámara y el vector up --> per PAN horizontal
 
-		//moure el eye i el center en la direcció oposada al moviment del ratolí per aconseguir un efecte de pan
-        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
-        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
-        camera->center += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
+        // move center only (right mouse): sign adjusted so mouse motion matches panning direction
+        Vector3 delta = (right * (xrel * panSpeed)) - (camera->up * (yrel * panSpeed));
+        camera->center += delta;
     }
 }
 
