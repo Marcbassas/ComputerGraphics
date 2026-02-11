@@ -98,21 +98,21 @@ void Application::Render(void) { //renderitza l'aplicació
 			if (i % 3 == 0) col = Color::BLUE; //entitat 0 = blau
 			else if (i % 3 == 1) col = Color::GREEN; //entitat 1 = verd
 			else if (i % 3 == 2) col = Color::RED; //entitat 2 = vermell
-            entities[i]->Render(&framebuffer, camera, &zbuffer); //renderitzar l'entitat al framebuffer amb la càmera i color
+            entities[i]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr); //renderitzar l'entitat al framebuffer amb la càmera i color
         }
 		framebuffer.Render();//mostrar framebuffer a la finestra
 		return;//SORTIR
 	}
 
     //MODE 1: dibuixar UNA SOLA ENTITAT (sense animació)
-	else if (current_mode == 1) {
-		framebuffer.Fill(Color::BLACK);
+    else if (current_mode == 1) {
+        framebuffer.Fill(Color::BLACK);
         //Z-BUFFER 
         FloatImage zbuffer(framebuffer.width, framebuffer.height); 
         zbuffer.Fill(999999.0f);
-		if (entities.size() >= 2) { //comprovar que hi ha almenys 2 entitats per dibuixar la del mig
-			entities[1]->Render(&framebuffer, camera, &zbuffer); //renderitzar entitat del mig al framebuffer amb la càmera i color
-		}
+        if (entities.size() >= 2) { //comprovar que hi ha almenys 2 entitats per dibuixar la del mig
+            entities[1]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr); //renderitzar entitat del mig al framebuffer amb la càmera i color
+        }
 		framebuffer.Render();
 		return;
 	}
@@ -168,6 +168,38 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         current_camera_property = CAM_FOV;
         std::cout << "Camera property: FOV" << std::endl;
         break;
+
+    // Render toggles
+    case SDLK_t: // T: toggle texture vs vertex color
+    {
+        for (auto e : entities) e->use_texture = !e->use_texture;
+        std::cout << "Toggled use_texture for all entities: " << (entities.size() ? entities[0]->use_texture : false) << std::endl;
+        break;
+    }
+
+    case SDLK_z: // Z: toggle occlusions
+    {
+        use_occlusions = !use_occlusions;
+        std::cout << "Toggled occlusions: " << use_occlusions << std::endl;
+        break;
+    }
+
+    case SDLK_c: // C: toggle interpolate UVs / plain color
+    {
+        for (auto e : entities) e->interpolate_uvs = !e->interpolate_uvs;
+        std::cout << "Toggled interpolate_uvs for all entities: " << (entities.size() ? entities[0]->interpolate_uvs : false) << std::endl;
+        break;
+    }
+
+    case SDLK_w: // W: toggle wireframe / filled
+    {
+        for (auto e : entities) {
+            if (e->mode == Entity::eRenderMode::WIREFRAME) e->mode = Entity::eRenderMode::TRIANGLES_INTERPOLATED;
+            else e->mode = Entity::eRenderMode::WIREFRAME;
+        }
+        std::cout << "Toggled wireframe/triangles for all entities" << std::endl;
+        break;
+    }
 
     //AUGMENTAR 
     case SDLK_PLUS: // +

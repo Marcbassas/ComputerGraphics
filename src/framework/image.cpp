@@ -122,10 +122,12 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& tri, FloatImage* zbuff
             // Z-buffer
             float z = p0.z * w0 + p1.z * w1 + p2.z * w2;
 
-            float& zbuf = zbuffer->GetPixelRef(x, y);
-            if (z > zbuf) continue; // pixel hidden
-
-            zbuf = z;
+			if (zbuffer) { //si tenim z-buffer --> comprovar si el píxel està ocult o no 
+				//comparant la profunditat interpolada del píxel amb el valor actual del z-buffer en aquesta posicio
+                float& zbuf = zbuffer->GetPixelRef(x, y);
+                if (z > zbuf) continue; // pixel hidden
+                zbuf = z;
+            }
 
             // Texture or vertex color
             Color finalColor;

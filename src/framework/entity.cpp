@@ -1,6 +1,6 @@
 ﻿#include "entity.h"
 #include <cmath> // Necessari per sin i cos
-#include <map>   // ✅ AFEGEIX AQUESTA LÍNIA
+#include <map>   
 
 
 Entity::Entity(){
@@ -114,43 +114,70 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
 			p.z >= -1 && p.z <= 1;
 		};
 
-	for (size_t i = 0; i + 2 < vertices.size(); i += 3) //iterar sobre els vèrtexs de 3 en 3 (triangles)
-	{
-		// Transformar LOCAL → WORLD
-		Vector3 w0 = model * vertices[i]; 
-		Vector3 w1 = model * vertices[i + 1]; 
-		Vector3 w2 = model * vertices[i + 2]; 
+    for (size_t i = 0; i + 2 < vertices.size(); i += 3) //iterar sobre els vèrtexs de 3 en 3 (triangles)
+    {
+        // Transformar LOCAL → WORLD
+        Vector3 w0 = model * vertices[i];
+        Vector3 w1 = model * vertices[i + 1];
+        Vector3 w2 = model * vertices[i + 2];
 
-		// Transformar WORLD → CLIP SPACE
-		Vector3 p0 = camera->ProjectVector(w0);
-		Vector3 p1 = camera->ProjectVector(w1);
-		Vector3 p2 = camera->ProjectVector(w2);
+        // Transformar WORLD → CLIP SPACE
+        Vector3 p0 = camera->ProjectVector(w0);
+        Vector3 p1 = camera->ProjectVector(w1);
+        Vector3 p2 = camera->ProjectVector(w2);
 
-		if (!inside_clip(p0) || !inside_clip(p1) || !inside_clip(p2)) //si algun vèrtex està fora del frustum --> rebutjar el triangle
-			continue;
-		//Transformar CLIP SPACE → SCREEN SPACE
-		Vector3 s0 = p0; 
-		Vector3 s1 = p1; 
-		Vector3 s2 = p2;
+        if (!inside_clip(p0) || !inside_clip(p1) || !inside_clip(p2)) //si algun vèrtex està fora del frustum --> rebutjar el triangle
+            continue;
 
-		//formula de transformació a coordenades de pantalla: x = (vector x + 1) * 0.5f * framebuffer width, y = (1 - (vector y + 1) * 0.5f) * framebuffer height
-		s0.x = (s0.x + 1) * 0.5f * framebuffer->width;
-		s0.y = (1 - (s0.y + 1) * 0.5f) * framebuffer->height;
+        //Transformar CLIP SPACE → SCREEN SPACE
+        Vector3 s0 = p0;
+        Vector3 s1 = p1;
+        Vector3 s2 = p2;
 
-		s1.x = (s1.x + 1) * 0.5f * framebuffer->width;
-		s1.y = (1 - (s1.y + 1) * 0.5f) * framebuffer->height;
+        s0.x = (s0.x + 1) * 0.5f * framebuffer->width;
+        s0.y = (1 - (s0.y + 1) * 0.5f) * framebuffer->height;
 
-		s2.x = (s2.x + 1) * 0.5f * framebuffer->width;
-		s2.y = (1 - (s2.y + 1) * 0.5f) * framebuffer->height;
+        s1.x = (s1.x + 1) * 0.5f * framebuffer->width;
+        s1.y = (1 - (s1.y + 1) * 0.5f) * framebuffer->height;
 
-		//dibuixar triangle interpolat amb menys paràmetres
-		sTriangleInfo info; //info = estruct quue conté tota la informació necessària per dibuixar el triangle (vèrtexs, coordenades UV, colors, textura)
-        info.v[0] = s0; info.v[1] = s1; info.v[2] = s2;
-        info.uv[0] = uvs[i]; info.uv[1] = uvs[i + 1]; info.uv[2] = uvs[i + 2];
-        info.c[0] = Color::WHITE; info.c[1] = Color::WHITE; info.c[2] = Color::WHITE;
-        info.texture = texture;
+        s2.x = (s2.x + 1) * 0.5f * framebuffer->width;
+        s2.y = (1 - (s2.y + 1) * 0.5f) * framebuffer->height;
 
-		framebuffer->DrawTriangleInterpolated(info, zbuffer); //dibuixar triangle amb interpolació de color i textura, passant tota la informació del triangle a través de l'estructura sTriangleInfo
-	}
+        switch (mode) {
+        case eRenderMode::POINTCLOUD: {
+            // draw vertices only
+            framebuffer->SetPixel((int)s0.x, (int)s0.y, Color::WHITE);
+            framebuffer->SetPixel((int)s1.x, (int)s1.y, Color::WHITE);
+            framebuffer->SetPixel((int)s2.x, (int)s2.y, Color::WHITE);
+            break;
+        }
+        case eRenderMode::WIREFRAME: {
+            // draw triangle edges
+            framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, Color::WHITE);
+            framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, Color::WHITE);
+            framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, Color::WHITE);
+            break;
+        }
+        case eRenderMode::TRIANGLES: {
+            // plain triangle (no interpolation) fill with white for simplicity
+            sTriangleInfo info;
+            info.v[0] = s0; info.v[1] = s1; info.v[2] = s2;
+            info.c[0] = Color::WHITE; info.c[1] = Color::WHITE; info.c[2] = Color::WHITE;
+            info.texture = nullptr;
+            framebuffer->DrawTriangleInterpolated(info, zbuffer);
+            break;
+        }
+        case eRenderMode::TRIANGLES_INTERPOLATED:
+        default: {
+            sTriangleInfo info;
+            info.v[0] = s0; info.v[1] = s1; info.v[2] = s2;
+            info.uv[0] = uvs[i]; info.uv[1] = uvs[i + 1]; info.uv[2] = uvs[i + 2];
+            info.c[0] = Color::WHITE; info.c[1] = Color::WHITE; info.c[2] = Color::WHITE;
+            info.texture = (use_texture ? texture : nullptr);
+            framebuffer->DrawTriangleInterpolated(info, zbuffer);
+            break;
+        }
+        }
+    }
 }
 

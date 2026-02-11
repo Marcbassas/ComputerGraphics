@@ -202,4 +202,7 @@ public:
 
 	// 3. El vector d'entitats
 	std::vector<Entity*> entities;
+
+	//renderitzar les oclusions (mode 1 i mode 2)
+	bool use_occlusions = true; //z buffer per defecte activat
 };
