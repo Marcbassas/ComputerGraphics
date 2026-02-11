@@ -293,40 +293,42 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOL
     last_mouse_x = x;
     last_mouse_y = y;
 
-	if (current_mode == 0) return; //si estem en mode paint --> no moure la càmera
+    if (current_mode == 0) return; //si estem en mode paint --> no moure la càmera
 
-	int buttons = SDL_GetMouseState(NULL, NULL); //estat actual dels botons del ratolí (quins estan premuts)
+    int buttons = SDL_GetMouseState(NULL, NULL); //estat actual dels botons del ratolí (quins estan premuts)
 
-	//orbitar al voltant del centre amb el botó esquerre
+    //orbitar al voltant del centre amb el botó esquerre
     if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-		float sensitivity = 0.005f; //sens del moviment del ratolí a la rotació de la càmera
-		float angY = -xrel * sensitivity; //invertir la rotacio horitzontal per: moure el ratolí a la dreta giri la càmera a la dreta
+        float sensitivity = 0.005f; //sens del moviment del ratolí a la rotació de la càmera
+        float angY = -xrel * sensitivity; //invertir la rotacio horitzontal per: moure el ratolí a la dreta giri la càmera a la dreta
         float angX = yrel * sensitivity; //invertir la rotació vertical per: moure el ratolí cap avall giri la càmera cap avall
 
-		Vector3 dir = camera->eye - camera->center; //vector de direcció des del centre cap a l'eye (direcció de la càmera)
+        Vector3 dir = camera->eye - camera->center; //vector de direcció des del centre cap a l'eye (direcció de la càmera)
 
-		//rotar al voltant de l'eix up de la càmera (rotació horizontal)
+        //rotar al voltant de l'eix up de la càmera (rotació horizontal)
         Matrix44 rotY; rotY.MakeRotationMatrix(angY, camera->up);
         dir = rotY.RotateVector(dir);
 
-		//rotar al voltant de l'eix perpendicular a la direcció i el vector up (rotació vertical)
+        //rotar al voltant de l'eix perpendicular a la direcció i el vector up (rotació vertical)
         Vector3 right = camera->up.Cross(dir).Normalize();
         Matrix44 rotX; rotX.MakeRotationMatrix(angX, right);
         dir = rotX.RotateVector(dir);
 
-		camera->eye = camera->center + dir; //actualitzar la posició de l'eye mantenint la mateixa distància al centre per orbitar al voltant del centre
+        camera->eye = camera->center + dir; //actualitzar la posició de l'eye mantenint la mateixa distància al centre per orbitar al voltant del centre
     }
-	//PAN amb el botó dret
+    //PAN amb el botó dret
     else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-		float panSpeed = 0.01f; //velocitat de pan = sensibilitat del pan al moviment del ratolí
-		Vector3 forward = (camera->center - camera->eye).Normalize(); //vector de direcció de la càmera des de l'eye cap al center (normalitzat)
-		Vector3 right = forward.Cross(camera->up).Normalize(); //vector perpendicular a la direcció de la cámara y el vector up --> per PAN horizontal
+        float panSpeed = 0.01f; //velocitat de pan = sensibilitat del pan al moviment del ratolí
+        Vector3 forward = (camera->center - camera->eye).Normalize(); //vector de direcció de la càmera des de l'eye cap al center (normalitzat)
+        Vector3 right = forward.Cross(camera->up).Normalize(); //vector perpendicular a la direcció de la cámara y el vector up --> per PAN horizontal
 
-        // move center only (right mouse): sign adjusted so mouse motion matches panning direction
-        Vector3 delta = (right * (xrel * panSpeed)) - (camera->up * (yrel * panSpeed));
-        camera->center += delta;
+        //moure el eye i el center en la direcció oposada al moviment del ratolí per aconseguir un efecte de pan
+        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
+        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
+        camera->center += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
     }
 }
+
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (PRESS)
 	//actualitzar la posició del ratolí i el seu estat
