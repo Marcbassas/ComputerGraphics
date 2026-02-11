@@ -69,89 +69,81 @@ void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const
 }
 */
 
-void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zbuffer, Image* texture, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2)
+void Image::DrawTriangleInterpolated(const sTriangleInfo& tri, FloatImage* zbuffer)
 {
-	int minX = (int)floor(std::min({ p0.x, p1.x, p2.x }));
-	int minY = (int)floor(std::min({ p0.y, p1.y, p2.y }));
-	int maxX = (int)ceil(std::max({ p0.x, p1.x, p2.x }));
-	int maxY = (int)ceil(std::max({ p0.y, p1.y, p2.y }));
+    const Vector3& p0 = tri.v[0];
+    const Vector3& p1 = tri.v[1];
+    const Vector3& p2 = tri.v[2];
 
-	minX = std::max(0, minX);
-	minY = std::max(0, minY);
-	maxX = std::min((int)width - 1, maxX);
-	maxY = std::min((int)height - 1, maxY);
+    int minX = (int)floor(std::min({ p0.x, p1.x, p2.x }));
+    int minY = (int)floor(std::min({ p0.y, p1.y, p2.y }));
+    int maxX = (int)ceil(std::max({ p0.x, p1.x, p2.x }));
+    int maxY = (int)ceil(std::max({ p0.y, p1.y, p2.y }));
 
-	float denom = ((p1.y - p2.y) * (p0.x - p2.x) +
-		(p2.x - p1.x) * (p0.y - p2.y));
+    minX = std::max(0, minX);
+    minY = std::max(0, minY);
+    maxX = std::min((int)width - 1, maxX);
+    maxY = std::min((int)height - 1, maxY);
 
-	if (fabs(denom) < 1e-6f) return;
+    float denom = ((p1.y - p2.y) * (p0.x - p2.x) +
+        (p2.x - p1.x) * (p0.y - p2.y));
 
-	const float eps = 1e-5f;
+    if (fabs(denom) < 1e-6f) return;
 
-	for (int y = minY; y <= maxY; ++y)
-	{
-		for (int x = minX; x <= maxX; ++x)
-		{
-			float px = x + 0.5f;
-			float py = y + 0.5f;
+    const float eps = 1e-5f;
 
-			float w0 = ((p1.y - p2.y) * (px - p2.x) +
-				(p2.x - p1.x) * (py - p2.y)) / denom;
+    for (int y = minY; y <= maxY; ++y)
+    {
+        for (int x = minX; x <= maxX; ++x)
+        {
+            float px = x + 0.5f;
+            float py = y + 0.5f;
 
-			float w1 = ((p2.y - p0.y) * (px - p2.x) +
-				(p0.x - p2.x) * (py - p2.y)) / denom;
+            float w0 = ((p1.y - p2.y) * (px - p2.x) +
+                (p2.x - p1.x) * (py - p2.y)) / denom;
 
-			float w2 = 1.0f - w0 - w1;
+            float w1 = ((p2.y - p0.y) * (px - p2.x) +
+                (p0.x - p2.x) * (py - p2.y)) / denom;
 
-			if (w0 < -eps || w1 < -eps || w2 < -eps)
-				continue;
+            float w2 = 1.0f - w0 - w1;
 
-			if (w0 < 0) w0 = 0;
-			if (w1 < 0) w1 = 0;
-			if (w2 < 0) w2 = 0;
+            if (w0 < -eps || w1 < -eps || w2 < -eps)
+                continue;
 
-			float sum = w0 + w1 + w2;
-			if (sum <= 0) continue;
+            if (w0 < 0) w0 = 0;
+            if (w1 < 0) w1 = 0;
+            if (w2 < 0) w2 = 0;
 
-			w0 /= sum; w1 /= sum; w2 /= sum;
+            float sum = w0 + w1 + w2;
+            if (sum <= 0) continue;
 
-			// -------------------------
-			//  Z‑BUFFER
-			// -------------------------
-			float z = p0.z * w0 + p1.z * w1 + p2.z * w2;
+            w0 /= sum; w1 /= sum; w2 /= sum;
 
-			float& zbuf = zbuffer->GetPixelRef(x, y);
-			if (z > zbuf) continue; // pixel oculto
+            // Z-buffer
+            float z = p0.z * w0 + p1.z * w1 + p2.z * w2;
 
-			zbuf = z; // actualizar z‑buffer
+            float& zbuf = zbuffer->GetPixelRef(x, y);
+            if (z > zbuf) continue; // pixel hidden
 
-			// -------------------------
-			//  TEXTURAS O COLOR
-			// -------------------------
-			Color finalColor;
+            zbuf = z;
 
-			if (texture) {
-				// Interpolar UVs
-				Vector2 uv = uv0 * w0 + uv1 * w1 + uv2 * w2;
+            // Texture or vertex color
+            Color finalColor;
+            if (tri.texture) {
+                Vector2 uv = tri.uv[0] * w0 + tri.uv[1] * w1 + tri.uv[2] * w2;
+                int tx = uv.x * (tri.texture->width - 1);
+                int ty = uv.y * (tri.texture->height - 1);
+                tx = std::max(0, std::min((int)tri.texture->width - 1, tx));
+                ty = std::max(0, std::min((int)tri.texture->height - 1, ty));
+                finalColor = tri.texture->GetPixel(tx, ty);
+            }
+            else {
+                finalColor = tri.c[0] * w0 + tri.c[1] * w1 + tri.c[2] * w2;
+            }
 
-				// Pasar de [0,1] a [0..W-1]
-				int tx = uv.x * (texture->width - 1);
-				int ty = uv.y * (texture->height - 1);
-
-				// Clamp
-				tx = std::max(0, std::min((int)texture->width - 1, tx));
-				ty = std::max(0, std::min((int)texture->height - 1, ty));
-
-				finalColor = texture->GetPixel(tx, ty);
-			}
-			else {
-				// Color por vértice
-				finalColor = c0 * w0 + c1 * w1 + c2 * w2;
-			}
-
-			SetPixel(x, y, finalColor);
-		}
-	}
+            SetPixel(x, y, finalColor);
+        }
+    }
 }
 
 
