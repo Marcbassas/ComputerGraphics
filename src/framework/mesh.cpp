@@ -19,22 +19,26 @@ void Mesh::Clear()
 
 void Mesh::Render(int primitive)
 {
+	std::cout << "sizeof(Vector3)=" << sizeof(Vector3)
+		<< " sizeof(Vector2)=" << sizeof(Vector2) << std::endl;
+	std::cout << "Drawing vertices: " << vertices.size() << std::endl;
+
 	// Render the mesh using your rasterizer
 	assert(vertices.size() && "No vertices in this mesh");
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, 0, &vertices[0]);
+	glVertexPointer(3, GL_FLOAT, sizeof(Vector3), &vertices[0]);
 
 	if (normals.size())
 	{
 		glEnableClientState(GL_NORMAL_ARRAY);
-		glNormalPointer(GL_FLOAT, 0, &normals[0]);
+		glNormalPointer(GL_FLOAT, sizeof(Vector3), &normals[0]);
 	}
 
 	if (uvs.size())
 	{
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, 0, &uvs[0]);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(Vector2), &uvs[0]);
 	}
 
 	glDrawArrays(primitive, 0, static_cast<GLsizei>(vertices.size()));

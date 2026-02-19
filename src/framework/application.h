@@ -8,6 +8,9 @@
 #include "framework.h"
 #include "image.h"
 #include "utils.h" //per el random
+#include "mesh.h"
+#include "shader.h"
+#include "texture.h"
 
 //----------------CLASE BOTÓ ----------------
 enum ButtonType { 
@@ -119,6 +122,11 @@ public:
 class Application
 {
 public:
+
+	Mesh* quad_mesh = nullptr;
+	Shader* quad_shader = nullptr;
+	Texture* quad_texture = nullptr;
+
 	//variables globals per a l'eina actual, color, amplada del contorn i si omplir formes
 	std::vector<Button> buttons;
 

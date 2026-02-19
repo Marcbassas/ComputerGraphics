@@ -25,33 +25,35 @@ Application::Application(const char* caption, int width, int height) { //constru
 }
 
 Application::~Application(){ 
+    delete quad_mesh;
+    delete quad_shader;
 }
 
 void Application::Init(void) { //inicialitza l'aplicació
-	std::cout << "Initiating app..." << std::endl;
+    std::cout << "Initiating app..." << std::endl;
 
-	//INICIALITZACIO DE LA MALLA, ENTITATS I CÀMERA
-	Mesh* m = new Mesh();
-	m->LoadOBJ("meshes/lee.obj");
+    //INICIALITZACIO DE LA MALLA, ENTITATS I CÀMERA
+    Mesh* m = new Mesh();
+    m->LoadOBJ("meshes/lee.obj");
 
     //crear les 3 entitats amb la malla carregada i posar-les a diferents posicions
     for (int i = 0; i < 3; i++) {
         Entity* ent = new Entity(m);
 
         // CARREGAR TEXTURA PER A AQUESTA ENTITAT 
-        ent->texture = new Image(); 
+        ent->texture = new Image();
         ent->texture->LoadTGA("textures/lee_color_specular.tga", true);
 
         //inicialitzar la matriu de model per a cada entitat
-		Matrix44 m_trans; //matriu de transformació per a cada entitat
+        Matrix44 m_trans; //matriu de transformació per a cada entitat
         m_trans.MakeTranslationMatrix((i - 1) * 6.0f, 0.0f, 0.0f); //posicionar entitats 
 
-		Matrix44 m_rot; //matriu de rotació per a cada entitat
+        Matrix44 m_rot; //matriu de rotació per a cada entitat
         m_rot.MakeRotationMatrix(3.14159f, Vector3(1, 0, 0)); // Rotació 180° en X per posar-lo dret
 
-		Matrix44 m_scale; //matriu d'escalat per a cada entitat
-		float scale_factor = 5.0f; //factor de escala per fer la malla més gran
-		m_scale.MakeScaleMatrix(scale_factor, scale_factor, scale_factor);//escalat de la malla per fer-la més gran
+        Matrix44 m_scale; //matriu d'escalat per a cada entitat
+        float scale_factor = 5.0f; //factor de escala per fer la malla més gran
+        m_scale.MakeScaleMatrix(scale_factor, scale_factor, scale_factor);//escalat de la malla per fer-la més gran
 
         //Ordre: Model = Translation * Rotation * Scale (T * R * S)
         ent->model = m_trans * m_rot * m_scale;
@@ -60,22 +62,34 @@ void Application::Init(void) { //inicialitza l'aplicació
         entities.push_back(ent);
     }
 
-	camera = new Camera();
+    camera = new Camera();
 
-	//POSICIÓ INICIAL CAMERA
-	camera->LookAt(
-		Vector3(0, -1, 8),    //posició de la càmera (eye)
-		Vector3(0, -1, 0),     //punt al que mira la càmera (center)
-		Vector3(0, 1, 0)       //vector up de la càmera (up)
-	);
+    //POSICIÓ INICIAL CAMERA
+    camera->LookAt(
+        Vector3(0, -1, 8),    //posició de la càmera (eye)
+        Vector3(0, -1, 0),     //punt al que mira la càmera (center)
+        Vector3(0, 1, 0)       //vector up de la càmera (up)
+    );
 
-	//configuració de perspectiva 
-	camera->SetPerspective(
-		45.0f,                              //FOV
-		window_width / (float)window_height, //aspect ratio
-		0.1f,                               //Near plane 
-		200.0f                              //Far plane 
-	);
+    //configuració de perspectiva 
+    camera->SetPerspective(
+        45.0f,                              //FOV
+        window_width / (float)window_height, //aspect ratio
+        0.1f,                               //Near plane 
+        200.0f                              //Far plane 
+    );
+
+    quad_mesh = new Mesh();
+    quad_mesh->CreateQuad();
+    quad_shader = new Shader();
+    bool ok = quad_shader->Load("shaders/quad.vs", "shaders/quad.fs");
+
+    std::cout << "Shader Load ok? " << ok << std::endl;
+    if (!ok || quad_shader->HasInfoLog())
+        std::cout << quad_shader->GetInfoLog() << std::endl;
+        
+    // Carrega textura OpenGL pel quad
+    quad_texture = Texture::Get("textures/lee_color_specular.tga");
 }
 
 void Application::Render(void) { //renderitza l'aplicació
@@ -85,6 +99,35 @@ void Application::Render(void) { //renderitza l'aplicació
 
 	//camera LOOKAT: posició de la càmera, punt al que mira i vector up
 	camera->LookAt(camera->eye, camera->center, camera->up);
+
+    if (current_mode == 0)
+    {
+        glViewport(0, 0, window_width, window_height);
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+
+        glClearColor(0.f, 0.f, 0.f, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glActiveTexture(GL_TEXTURE0);
+
+        quad_shader->Enable();
+
+        // passar textura al shader (sampler2D)
+        quad_shader->SetTexture("u_texture", quad_texture);
+
+        quad_mesh->Render(GL_TRIANGLES);
+
+        quad_shader->Disable();
+        return;
+    }
+
 
 	//MODE 2: dibuixar VARIES ENTITATS animades (mode d'animació)
 	if (current_mode == 2) { 
@@ -142,6 +185,11 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
 
 	case SDLK_ESCAPE: // ESC: sortir de aplicació
         exit(0);
+        break;
+
+    case SDLK_0:
+        current_mode = 0;
+        std::cout << "Quad / GLSL mode" << std::endl;
         break;
 
 	case SDLK_1: //mode 1 = una sola entitat sense animació
