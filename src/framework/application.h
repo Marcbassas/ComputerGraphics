@@ -123,11 +123,19 @@ class Application
 {
 public:
 
-	int current_mode = 0;   // 0 = 3D single, 1 = quad, 5 = multi, etc.
+	//LAB4
+	bool in_lab4 = true; //si estem al lab4 o lab5 --> AFEGIR TECLA L PER CANVIAR ENTRE LABS
+	int current_task = 1; //tasca actual a...f en int 
+	char current_task_char = 'a'; //tasca actual a...f en char
+
+	//QUADS
+	int current_mode = 4;   // 0 = 3D single, 1 = quad, 5 = multi, etc.
 	int quad_mode = 0;      // 0..5 = a..f
+	int current_task_num = 1; //1 = formules, 2= filtres, 3=transformacions
 
 	Mesh* quad_mesh = nullptr;
 	Shader* quad_shader = nullptr;
+	Shader* raster_shader = nullptr; //2.5
 	Texture* quad_texture = nullptr;
 
 	//variables globals per a l'eina actual, color, amplada del contorn i si omplir formes
@@ -203,6 +211,7 @@ public:
 		return Vector2(float(w), float(h));
 	}
 
+	//-------------lab3-----------------
 	// 2. Declara la càmera (molt important, t'està donant error perquè falta)
 	Camera* camera;
 

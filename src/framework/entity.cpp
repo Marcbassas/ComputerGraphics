@@ -48,6 +48,8 @@ void Entity::Update(float seconds_elapsed) {
 	model = m_trans * m_rot_y * m_rot_x * m_scale;
 }
 
+
+//RENDERITZAR AMB COLOR PLA (mode == TRIANGLES i interpolate_uvs == false)
 /*
 void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 	if (!mesh) return;
@@ -102,6 +104,9 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 }
 */
 
+
+//RENDERITZAR AMB TEXTURA I INTERPOLACIÓ DE COLOR (mode == TRIANGLES_INTERPOLATED)
+/*
 void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
 	if (!mesh) return; //si no hi ha malla --> no es pot renderitzar res --> sortim de la funció
 
@@ -205,6 +210,27 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
 		}
 		}
 	}
+}
+*/
+
+//RENDER AMB GPU I SHADER
+void Entity::Render(Camera* camera)
+{
+	if (!mesh || !shader) return;
+
+	shader->Enable();
+
+	// Enviar matrius com a uniforms
+	shader->SetMatrix44("u_model", model);
+	shader->SetMatrix44("u_viewprojection", camera->viewprojection_matrix);
+
+	// Enviar textura si n'hi ha
+	if (texture_gpu)
+		shader->SetTexture("u_texture", texture_gpu);
+
+	mesh->Render(GL_TRIANGLES);
+
+	shader->Disable();
 }
 
 

@@ -51,7 +51,7 @@ void Application::Init(void) { //inicialitza l'aplicació
         m_trans.MakeTranslationMatrix((i - 1) * 6.0f, 0.0f, 0.0f); //posicionar entitats 
 
         Matrix44 m_rot; //matriu de rotació per a cada entitat
-        m_rot.MakeRotationMatrix(3.14159f, Vector3(1, 0, 0)); // Rotació 180° en X per posar-lo dret
+        m_rot.MakeRotationMatrix(0.0f, Vector3(1, 0, 0)); // Rotació 180° en X per posar-lo dret
 
         Matrix44 m_scale; //matriu d'escalat per a cada entitat
         float scale_factor = 5.0f; //factor de escala per fer la malla més gran
@@ -81,6 +81,7 @@ void Application::Init(void) { //inicialitza l'aplicació
         200.0f                              //Far plane 
     );
 
+    //LAB4 QUADS
     quad_mesh = new Mesh();
     quad_mesh->CreateQuad();
     quad_shader = new Shader();
@@ -91,7 +92,16 @@ void Application::Init(void) { //inicialitza l'aplicació
         std::cout << quad_shader->GetInfoLog() << std::endl;
         
     // Carrega textura OpenGL pel quad
-    quad_texture = Texture::Get("textures/lee_color_specular.tga");
+    quad_texture = Texture::Get("images/fruits.png");
+
+    //LAB4 2.5 --> CREAR SHADER PER A RASTERITZACIÓ
+    raster_shader = new Shader();
+    raster_shader->Load("shaders/raster.vs", "shaders/raster.fs");
+
+    for (auto ent : entities) { //per cada entitat, assignar el shader de rasterització i la textura corresponent
+        ent->shader = raster_shader;
+        ent->texture_gpu = Texture::Get("textures/lee_color_specular.tga");
+    }
 }
 
 void Application::Render(void)
@@ -99,21 +109,6 @@ void Application::Render(void)
     // Camera setup per 3D
     camera->SetPerspective(camera->fov, window_width / (float)window_height, camera->near_plane, camera->far_plane);
     camera->LookAt(camera->eye, camera->center, camera->up);
-
-    // MODE 0: UNA ENTITAT (3D)
-    if (current_mode == 0)
-    {
-        framebuffer.Fill(Color::BLACK);
-
-        FloatImage zbuffer(framebuffer.width, framebuffer.height);
-        zbuffer.Fill(999999.0f);
-
-        if (entities.size() >= 2)
-            entities[1]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr);
-
-        framebuffer.Render();
-        return;
-    }
 
     // MODE 1: QUAD GLSL (a..f)
     if (current_mode == 1)
@@ -133,37 +128,60 @@ void Application::Render(void)
 
         quad_shader->Enable();
 
-        // uniforms
-        quad_shader->SetInt("u_mode", quad_mode); // 0..5 (a..f)
-        quad_shader->SetVector2("u_resolution", Vector2((float)window_width, (float)window_height));
+        //uniforms
+        quad_shader->SetInt("u_mode", quad_mode); 
+        quad_shader->SetInt("u_task", current_task_num);
+		quad_shader->SetVector2("u_resolution", Vector2((float)window_width, (float)window_height));
         quad_shader->SetFloat("u_time", time);
-
+		//passar la textura al shader (si existeix)
+        if (quad_texture) quad_shader->SetTexture("u_texture", quad_texture);
+        
         quad_mesh->Render(GL_TRIANGLES);
 
         quad_shader->Disable();
         return;
     }
 
-    // MODES 2,3,4: (de moment, no fan res -> per no liar, mostra negre)
-    if (current_mode >= 2 && current_mode <= 4)
+    //MODE 2 I 3 = IMATGE DE FRUITA
+    if (current_mode == 2 || current_mode == 3)
     {
         framebuffer.Fill(Color::BLACK);
         framebuffer.Render();
         return;
     }
 
-    // MODE 5: VARIES ENTITATS (3D)
+    //MODE 4: RENDERITZAT 3D GPU (Task 2.5)
+    if (current_mode == 4)
+    {
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        camera->UpdateViewMatrix();
+        camera->UpdateProjectionMatrix();
+        camera->UpdateViewProjectionMatrix();
+
+        // Només renderitzar l'entitat del centre (índex 1)
+        if (entities.size() >= 2)
+            entities[1]->Render(camera);
+
+        return;
+    }
+
+    // MODE 5: VARIES ENTITATS (3D GPU)
     if (current_mode == 5)
     {
-        FloatImage zbuffer(framebuffer.width, framebuffer.height);
-        zbuffer.Fill(999999.0f);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        framebuffer.Fill(Color::BLACK);
+        camera->UpdateViewMatrix();
+        camera->UpdateProjectionMatrix();
+        camera->UpdateViewProjectionMatrix();
 
-        for (size_t i = 0; i < entities.size(); ++i)
-            entities[i]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr);
+        for (auto e : entities)
+            e->Render(camera);
 
-        framebuffer.Render();
         return;
     }
 }
@@ -195,35 +213,30 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         exit(0);
         break;
 
-        // 0: una entitat (3D)
-    case SDLK_0:
-        current_mode = 0;
-        std::cout << "Mode 0: Single entity (3D)\n";
-        break;
-
         // 1: QUAD (GLSL) + submodes a..f
     case SDLK_1:
-        current_mode = 1;
-        std::cout << "Mode 1: Quad GLSL (press a..f)\n";
+        current_mode = 1; 
+        current_task_num = 1; //formules 
         break;
 
-        // 2,3,4 lliures
+		//2: imatge de fruita (2.1 i 2.2)
     case SDLK_2:
-        current_mode = 2;
-        std::cout << "Mode 2: free\n";
+        current_mode = 1;
+		current_task_num = 2; //filtres
         break;
 
+		//3: transformacions (2.4)
     case SDLK_3:
-        current_mode = 3;
-        std::cout << "Mode 3: free\n";
+        current_mode = 1;
+		current_task_num = 3; //transformacions
         break;
 
+		//4: renderitzat 3D GPU (2.5)
     case SDLK_4:
         current_mode = 4;
-        std::cout << "Mode 4: free\n";
         break;
 
-        // 5: varies entitats (3D)
+        //5: varies entitats GPU (3D)
     case SDLK_5:
         current_mode = 5;
         std::cout << "Mode 5: Multiple entities (3D)\n";
@@ -247,6 +260,11 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         break;
     case SDLK_f:
         if (current_mode == 1) { quad_mode = 5; std::cout << "Quad submode: f\n"; }
+        break;
+
+    case SDLK_l: // L: toggle between lab4 and lab5 scenes
+        in_lab4 = !in_lab4;
+        std::cout << "Toggled lab: now in " << (in_lab4 ? "LAB4" : "LAB5") << std::endl;
         break;
 
 	case SDLK_n: //N = near 
@@ -377,8 +395,8 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
     }
 }
 
-
-void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOLI
+void Application::OnMouseMove(SDL_MouseButtonEvent event)
+{
     int x = event.x;
     int y = event.y;
 
@@ -388,39 +406,42 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOL
     last_mouse_x = x;
     last_mouse_y = y;
 
-    if (current_mode >= 1 && current_mode <= 4) return; //si estem en mode (1.2.3.4) no moure la càmera
+    // només modes 3D (0,4,5)
+    if (current_mode == 1 || current_mode == 2 || current_mode == 3) return;
 
-    int buttons = SDL_GetMouseState(NULL, NULL); //estat actual dels botons del ratolí (quins estan premuts)
+    int buttons = SDL_GetMouseState(NULL, NULL);
 
-    //orbitar al voltant del centre amb el botó esquerre
-    if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-        float sensitivity = 0.005f; //sens del moviment del ratolí a la rotació de la càmera
-        float angY = -xrel * sensitivity; //invertir la rotacio horitzontal per: moure el ratolí a la dreta giri la càmera a la dreta
-        float angX = yrel * sensitivity; //invertir la rotació vertical per: moure el ratolí cap avall giri la càmera cap avall
+    // ORBITAR amb click esquerre
+    if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
+    {
+        float sensitivity = 0.005f;
+        float angY = -xrel * sensitivity;
+        float angX = -yrel * sensitivity;
 
-        Vector3 dir = camera->eye - camera->center; //vector de direcció des del centre cap a l'eye (direcció de la càmera)
+        Vector3 dir = camera->eye - camera->center;
 
-        //rotar al voltant de l'eix up de la càmera (rotació horizontal)
-        Matrix44 rotY; rotY.MakeRotationMatrix(angY, camera->up);
+        Matrix44 rotY;
+        rotY.MakeRotationMatrix(angY, Vector3(0, 1, 0)); // rotar al voltant Y global
         dir = rotY.RotateVector(dir);
 
-        //rotar al voltant de l'eix perpendicular a la direcció i el vector up (rotació vertical)
-        Vector3 right = camera->up.Cross(dir).Normalize();
-        Matrix44 rotX; rotX.MakeRotationMatrix(angX, right);
+        Vector3 right = dir.Cross(camera->up).Normalize();
+        Matrix44 rotX;
+        rotX.MakeRotationMatrix(angX, right);
         dir = rotX.RotateVector(dir);
 
-        camera->eye = camera->center + dir; //actualitzar la posició de l'eye mantenint la mateixa distància al centre per orbitar al voltant del centre
+        camera->eye = camera->center + dir;
     }
-    //PAN amb el botó dret
-    else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-        float panSpeed = 0.01f; //velocitat de pan = sensibilitat del pan al moviment del ratolí
-        Vector3 forward = (camera->center - camera->eye).Normalize(); //vector de direcció de la càmera des de l'eye cap al center (normalitzat)
-        Vector3 right = forward.Cross(camera->up).Normalize(); //vector perpendicular a la direcció de la cámara y el vector up --> per PAN horizontal
+    // PAN amb click dret
+    else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
+    {
+        float panSpeed = 0.02f;
+        Vector3 forward = (camera->center - camera->eye).Normalize();
+        Vector3 right = forward.Cross(camera->up).Normalize();
+        Vector3 up = right.Cross(forward).Normalize();
 
-        //moure el eye i el center en la direcció oposada al moviment del ratolí per aconseguir un efecte de pan
-        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
-        camera->eye += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
-        camera->center += (-xrel * panSpeed) * right + (-yrel * panSpeed) * camera->up;
+        Vector3 delta = (right * (float)(-xrel)) * panSpeed + (up * (float)(yrel)) * panSpeed;
+        camera->eye += delta;
+        camera->center += delta;
     }
 }
 

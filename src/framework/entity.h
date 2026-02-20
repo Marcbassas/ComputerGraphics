@@ -3,9 +3,14 @@
 #include "mesh.h" //per la malla 
 #include "camera.h" //camara
 #include "image.h" //imatges 
+#include "shader.h"	//shaders
+#include "texture.h" //textures
 
 class Entity {
 public:
+
+	Shader* shader; //material de la entitat (punter a un shader que defineix com es renderitza l'entitat)
+	Texture* texture_gpu; //textura de la entitat a la GPU (punter a un objecte Texture que conté la textura carregada a la GPU)
 	
 	Mesh* mesh; //punter a la malla
 	Matrix44 model; //matriu de modelat
@@ -30,6 +35,7 @@ public:
 
 	//metodes
 	//void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)
-	void Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer);
+	//void Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer);
 	void Update(float dt); //actualitza l'entitat
+	void Render(Camera* camera); //nou metode GPU --> renderitza l'entitat utilitzant OpenGL i el shader associat a l'entitat
 };
