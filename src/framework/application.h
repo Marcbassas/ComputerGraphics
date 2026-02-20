@@ -123,6 +123,9 @@ class Application
 {
 public:
 
+	int current_mode = 0;   // 0 = 3D single, 1 = quad, 5 = multi, etc.
+	int quad_mode = 0;      // 0..5 = a..f
+
 	Mesh* quad_mesh = nullptr;
 	Shader* quad_shader = nullptr;
 	Texture* quad_texture = nullptr;
@@ -135,7 +138,6 @@ public:
 	Color current_color = Color::BLACK;  // Color per defecte
 
     //modes
-    int current_mode = 1;      // 1 = Single entity, 2 = Multiple animated entities (0 = Paint mode)
 	bool fill_shapes = false;  // F = toggle
 	int border_width = 1;      // + / -
 

@@ -27,6 +27,8 @@ Application::Application(const char* caption, int width, int height) { //constru
 Application::~Application(){ 
     delete quad_mesh;
     delete quad_shader;
+    current_mode = 0;
+    quad_mode = 0;
 }
 
 void Application::Init(void) { //inicialitza l'aplicació
@@ -92,15 +94,29 @@ void Application::Init(void) { //inicialitza l'aplicació
     quad_texture = Texture::Get("textures/lee_color_specular.tga");
 }
 
-void Application::Render(void) { //renderitza l'aplicació
-	
-	//camera SETPERSPECTIVE: fov, aspect ratio, planol daprop, planol llunya
-	camera->SetPerspective(camera->fov, window_width / (float)window_height, camera->near_plane, camera->far_plane);
+void Application::Render(void)
+{
+    // Camera setup per 3D
+    camera->SetPerspective(camera->fov, window_width / (float)window_height, camera->near_plane, camera->far_plane);
+    camera->LookAt(camera->eye, camera->center, camera->up);
 
-	//camera LOOKAT: posició de la càmera, punt al que mira i vector up
-	camera->LookAt(camera->eye, camera->center, camera->up);
-
+    // MODE 0: UNA ENTITAT (3D)
     if (current_mode == 0)
+    {
+        framebuffer.Fill(Color::BLACK);
+
+        FloatImage zbuffer(framebuffer.width, framebuffer.height);
+        zbuffer.Fill(999999.0f);
+
+        if (entities.size() >= 2)
+            entities[1]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr);
+
+        framebuffer.Render();
+        return;
+    }
+
+    // MODE 1: QUAD GLSL (a..f)
+    if (current_mode == 1)
     {
         glViewport(0, 0, window_width, window_height);
 
@@ -115,12 +131,12 @@ void Application::Render(void) { //renderitza l'aplicació
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        glActiveTexture(GL_TEXTURE0);
-
         quad_shader->Enable();
 
-        // passar textura al shader (sampler2D)
-        quad_shader->SetTexture("u_texture", quad_texture);
+        // uniforms
+        quad_shader->SetInt("u_mode", quad_mode); // 0..5 (a..f)
+        quad_shader->SetVector2("u_resolution", Vector2((float)window_width, (float)window_height));
+        quad_shader->SetFloat("u_time", time);
 
         quad_mesh->Render(GL_TRIANGLES);
 
@@ -128,38 +144,30 @@ void Application::Render(void) { //renderitza l'aplicació
         return;
     }
 
-
-	//MODE 2: dibuixar VARIES ENTITATS animades (mode d'animació)
-	if (current_mode == 2) { 
-        //crear Z-buffer cada frame 
-        FloatImage zbuffer(framebuffer.width, framebuffer.height); 
-        zbuffer.Fill(999999.0f); // o FLT_MAX
-		framebuffer.Fill(Color::BLACK); //esborrar pantalla a negre
-        for (size_t i = 0; i < entities.size(); ++i) { //dibuixar les 3 entitats 
-            //colors de les entitats: blau, verd, vermell
-            Color col = Color::WHITE;
-			if (i % 3 == 0) col = Color::BLUE; //entitat 0 = blau
-			else if (i % 3 == 1) col = Color::GREEN; //entitat 1 = verd
-			else if (i % 3 == 2) col = Color::RED; //entitat 2 = vermell
-            entities[i]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr); //renderitzar l'entitat al framebuffer amb la càmera i color
-        }
-		framebuffer.Render();//mostrar framebuffer a la finestra
-		return;//SORTIR
-	}
-
-    //MODE 1: dibuixar UNA SOLA ENTITAT (sense animació)
-    else if (current_mode == 1) {
+    // MODES 2,3,4: (de moment, no fan res -> per no liar, mostra negre)
+    if (current_mode >= 2 && current_mode <= 4)
+    {
         framebuffer.Fill(Color::BLACK);
-        //Z-BUFFER 
-        FloatImage zbuffer(framebuffer.width, framebuffer.height); 
+        framebuffer.Render();
+        return;
+    }
+
+    // MODE 5: VARIES ENTITATS (3D)
+    if (current_mode == 5)
+    {
+        FloatImage zbuffer(framebuffer.width, framebuffer.height);
         zbuffer.Fill(999999.0f);
-        if (entities.size() >= 2) { //comprovar que hi ha almenys 2 entitats per dibuixar la del mig
-            entities[1]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr); //renderitzar entitat del mig al framebuffer amb la càmera i color
-        }
-		framebuffer.Render();
-		return;
-	}
+
+        framebuffer.Fill(Color::BLACK);
+
+        for (size_t i = 0; i < entities.size(); ++i)
+            entities[i]->Render(&framebuffer, camera, use_occlusions ? &zbuffer : nullptr);
+
+        framebuffer.Render();
+        return;
+    }
 }
+
 
 //actualittza l'aplicacio en funcio del temps que ha passat
 void Application::Update(float seconds_elapsed){
@@ -187,19 +195,58 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         exit(0);
         break;
 
+        // 0: una entitat (3D)
     case SDLK_0:
         current_mode = 0;
-        std::cout << "Quad / GLSL mode" << std::endl;
+        std::cout << "Mode 0: Single entity (3D)\n";
         break;
 
-	case SDLK_1: //mode 1 = una sola entitat sense animació
+        // 1: QUAD (GLSL) + submodes a..f
+    case SDLK_1:
         current_mode = 1;
-        std::cout << "Single entity mode" << std::endl;
+        std::cout << "Mode 1: Quad GLSL (press a..f)\n";
         break;
 
-	case SDLK_2: //mode 2 = múltiples entitats animades
+        // 2,3,4 lliures
+    case SDLK_2:
         current_mode = 2;
-        std::cout << "Multiple animated entities mode" << std::endl;
+        std::cout << "Mode 2: free\n";
+        break;
+
+    case SDLK_3:
+        current_mode = 3;
+        std::cout << "Mode 3: free\n";
+        break;
+
+    case SDLK_4:
+        current_mode = 4;
+        std::cout << "Mode 4: free\n";
+        break;
+
+        // 5: varies entitats (3D)
+    case SDLK_5:
+        current_mode = 5;
+        std::cout << "Mode 5: Multiple entities (3D)\n";
+        break;
+
+        // Submodes només quan estàs al mode 1 (quad)
+    case SDLK_a:
+        if (current_mode == 1) { quad_mode = 0; std::cout << "Quad submode: a\n"; }
+        break;
+    case SDLK_b:
+        if (current_mode == 1) { quad_mode = 1; std::cout << "Quad submode: b\n"; }
+        break;
+    case SDLK_c:
+        if (current_mode == 1) { quad_mode = 2; std::cout << "Quad submode: c\n"; }
+        break;
+    case SDLK_d:
+        if (current_mode == 1) { quad_mode = 3; std::cout << "Quad submode: d\n"; }
+        break;
+    case SDLK_e:
+        if (current_mode == 1) { quad_mode = 4; std::cout << "Quad submode: e\n"; }
+        break;
+    case SDLK_f:
+        if (current_mode == 1) { quad_mode = 5; std::cout << "Quad submode: f\n"; }
         break;
 
 	case SDLK_n: //N = near 
@@ -207,7 +254,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         std::cout << "Camera property: NEAR" << std::endl;
         break;
 
-	case SDLK_f: //F = far
+	case SDLK_g: //F = far
         current_camera_property = CAM_FAR;
         std::cout << "Camera property: FAR" << std::endl;
         break;
@@ -232,7 +279,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         break;
     }
 
-    case SDLK_c:
+    case SDLK_u:
     {
         for (auto e : entities) e->interpolate_uvs = !e->interpolate_uvs;
         std::cout << "Toggled interpolate_uvs for all entities: " << (entities.size() ? entities[0]->interpolate_uvs : false) << std::endl;
