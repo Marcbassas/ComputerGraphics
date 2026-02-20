@@ -388,7 +388,7 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event) { //MOVIMENT DEL RATOL
     last_mouse_x = x;
     last_mouse_y = y;
 
-    if (current_mode == 0) return; //si estem en mode paint --> no moure la càmera
+    if (current_mode >= 1 && current_mode <= 4) return; //si estem en mode (1.2.3.4) no moure la càmera
 
     int buttons = SDL_GetMouseState(NULL, NULL); //estat actual dels botons del ratolí (quins estan premuts)
 
