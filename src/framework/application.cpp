@@ -102,31 +102,55 @@ void Application::Init(void) { //inicialitza l'aplicació
         ent->shader = raster_shader;
         ent->texture_gpu = Texture::Get("textures/lee_color_specular.tga");
     }
+
+	//LAB5 - CONFIGURACIO DE LLUMS I MATERIALS
+	uniform_data.ambient_light = Vector3(0.1f, 0.1f, 0.1f); //llum ambient global 
+	uniform_data.lights[0].position = Vector3(5.0f, 10.0f, 5.0f); //posició de la llum 0, llum direccional des de dalt i a la dreta
+	uniform_data.lights[0].color = Vector3(1.0f, 1.0f, 1.0f); //color de la llum 0 (blanca)
+	uniform_data.num_lights = 1; //nombre de llunms actives
+
+    //crear material Gouraud
+	gouraud_material = new Material(); //material per a renderitzat Gouraud
+	gouraud_material->shader = new Shader(); //shader per a renderitzat Gouraud
+	gouraud_material->shader->Load("shaders/gouraud.vs", "shaders/gouraud.fs"); //carregar shader de Gouraud 
+	gouraud_material->color_texture = Texture::Get("textures/lee_color_specular.tga"); //assignar textura de color al material Gouraud
+	gouraud_material->use_color_texture = true; //activar el us de la textura de color al material Gouraud
+
+    //crear material Phong
+	phong_material = new Material(); //material per a renderitzat Phong
+	phong_material->shader = new Shader(); //shader per a renderitzat Phong
+	phong_material->shader->Load("shaders/phong.vs", "shaders/phong.fs"); //carregar shader de Phong
+	phong_material->color_texture = Texture::Get("textures/lee_color_specular.tga"); //assignar textura de color al material Phong
+	phong_material->use_color_texture = true; //activar el us de la textura de color al material Phong
+
+    //assignar material Gouraud a les entitats per defecte
+	for (auto ent : entities) //per cada entitat = assignar el material de Gouraud
+        ent->material = gouraud_material; 
+
 }
 
-void Application::Render(void)
-{
-    // Camera setup per 3D
+void Application::Render(void){
+    //camera setup per 3D
     camera->SetPerspective(camera->fov, window_width / (float)window_height, camera->near_plane, camera->far_plane);
     camera->LookAt(camera->eye, camera->center, camera->up);
 
-    // MODE 1: QUAD GLSL (a..f)
+    //MODE 1: QUAD GLSL (a..f)
     if (current_mode == 1)
     {
         glViewport(0, 0, window_width, window_height);
 
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+		glDisable(GL_DEPTH_TEST); //desactivar test de profunditat per renderitzat 2D
+		glDisable(GL_CULL_FACE); //desactivar cull face per renderitzat 2D
+         
+		glClearColor(0.f, 0.f, 0.f, 1.f); //color de fons negre
+		glClear(GL_COLOR_BUFFER_BIT); //netejar el framebuffer amb el color de fons
 
-        glClearColor(0.f, 0.f, 0.f, 1.f);
-        glClear(GL_COLOR_BUFFER_BIT);
+		glMatrixMode(GL_PROJECTION); //configurar matriu de projecció ortogràfica per a renderitzat 2D
+		glLoadIdentity(); //carregar matriu identitat a la matriu de projecció
+		glMatrixMode(GL_MODELVIEW); //configurar matriu de model per a renderitzat 2D
+		glLoadIdentity(); //carregar matriu identitat a la matriu de model
 
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-
-        quad_shader->Enable();
+		quad_shader->Enable(); //activar el shader per renderitzar el quad
 
         //uniforms
         quad_shader->SetInt("u_mode", quad_mode); 
@@ -136,50 +160,57 @@ void Application::Render(void)
 		//passar la textura al shader (si existeix)
         if (quad_texture) quad_shader->SetTexture("u_texture", quad_texture);
         
-        quad_mesh->Render(GL_TRIANGLES);
+		quad_mesh->Render(GL_TRIANGLES); //renderitzar el quad amb el shader activat, el shader farà diferents coses segons el submode i la tasca actuals
 
-        quad_shader->Disable();
+		quad_shader->Disable(); //desactivar el shader després de renderitzar el quad
         return;
     }
 
     //MODE 2 I 3 = IMATGE DE FRUITA
     if (current_mode == 2 || current_mode == 3)
     {
-        framebuffer.Fill(Color::BLACK);
-        framebuffer.Render();
+		framebuffer.Fill(Color::BLACK); //netejar framebuffer amb negre
+		framebuffer.Render(); //renderitzar el framebuffer a la pantalla (2.2)
         return;
     }
 
     //MODE 4: RENDERITZAT 3D GPU (Task 2.5)
-    if (current_mode == 4)
-    {
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (current_mode == 4){
+		glEnable(GL_DEPTH_TEST); //activar test de profunditat per renderitzat 3D
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f); //color de fons gris fosc
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //netejar color i profunditat
 
-        camera->UpdateViewMatrix();
+        camera->UpdateViewMatrix(); 
         camera->UpdateProjectionMatrix();
         camera->UpdateViewProjectionMatrix();
 
-        // Només renderitzar l'entitat del centre (índex 1)
-        if (entities.size() >= 2)
-            entities[1]->Render(camera);
-
+        if (in_lab4){
+            //LAB4: shader simple
+			if (entities.size() >= 2) //si hi ha almenys 2 entitats --> renderitzar la segona entitat passant-li la càmera per a que pugui calcular les matrius de transformació i renderitzar-se amb el shader simple
+                entities[1]->Render(camera);
+        }
+        else{
+            //LAB5: material amb llums
+			uniform_data.viewprojection = camera->viewprojection_matrix; //passar la matriu de vista-projecció combinada al shader a través de la estructura uniform_data
+			uniform_data.camera_position = camera->eye; //passar la posició de la càmera al shader a través de la estructura uniform_data
+			if (entities.size() >= 2) //si hi ha almenys 2 entitats --> renderitzar la segona entitat amb les dades uniformes globals
+                entities[1]->Render(uniform_data);
+        }
         return;
     }
 
-    // MODE 5: VARIES ENTITATS (3D GPU)
+    //MODE 5: VARIES ENTITATS (3D GPU)
     if (current_mode == 5)
     {
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST); //activar test de profunditat per renderitzat 3D
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f); //color de fons gris fosc
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //netejar color i profunditat
 
         camera->UpdateViewMatrix();
         camera->UpdateProjectionMatrix();
         camera->UpdateViewProjectionMatrix();
 
-        for (auto e : entities)
+		for (auto e : entities) //per cada entitat, renderitzar-la passant-li la càmera per a que pugui calcular les matrius de transformació i renderitzar-se amb el shader associat a l'entitat
             e->Render(camera);
 
         return;
@@ -204,45 +235,37 @@ void Application::Update(float seconds_elapsed){
 
 
 
-void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
-    // KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
-
+void Application::OnKeyPressed(SDL_KeyboardEvent event) {
     switch (event.keysym.sym) {
 
-	case SDLK_ESCAPE: // ESC: sortir de aplicació
+    case SDLK_ESCAPE:
         exit(0);
         break;
 
-        // 1: QUAD (GLSL) + submodes a..f
+        // ---- TECLES LAB4 ----
     case SDLK_1:
-        current_mode = 1; 
-        current_task_num = 1; //formules 
+        if (in_lab4) { current_mode = 1; current_task_num = 1; }
+        else { uniform_data.num_lights = 1; std::cout << "Lights: 1\n"; }
         break;
 
-		//2: imatge de fruita (2.1 i 2.2)
     case SDLK_2:
-        current_mode = 1;
-		current_task_num = 2; //filtres
+        if (in_lab4) { current_mode = 1; current_task_num = 2; }
+        else { uniform_data.num_lights = 2; std::cout << "Lights: 2\n"; }
         break;
 
-		//3: transformacions (2.4)
     case SDLK_3:
-        current_mode = 1;
-		current_task_num = 3; //transformacions
+        if (in_lab4) { current_mode = 1; current_task_num = 3; }
         break;
 
-		//4: renderitzat 3D GPU (2.5)
     case SDLK_4:
         current_mode = 4;
         break;
 
-        //5: varies entitats GPU (3D)
     case SDLK_5:
         current_mode = 5;
-        std::cout << "Mode 5: Multiple entities (3D)\n";
         break;
 
-        // Submodes només quan estàs al mode 1 (quad)
+        // ---- SUBMODES QUAD (a..f) ----
     case SDLK_a:
         if (current_mode == 1) { quad_mode = 0; std::cout << "Quad submode: a\n"; }
         break;
@@ -251,6 +274,11 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         break;
     case SDLK_c:
         if (current_mode == 1) { quad_mode = 2; std::cout << "Quad submode: c\n"; }
+        else if (!in_lab4 && gouraud_material && phong_material) {
+            gouraud_material->use_color_texture = !gouraud_material->use_color_texture;
+            phong_material->use_color_texture = !phong_material->use_color_texture;
+            std::cout << "Color texture: " << gouraud_material->use_color_texture << "\n";
+        }
         break;
     case SDLK_d:
         if (current_mode == 1) { quad_mode = 3; std::cout << "Quad submode: d\n"; }
@@ -262,138 +290,132 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) { //tecla premuda
         if (current_mode == 1) { quad_mode = 5; std::cout << "Quad submode: f\n"; }
         break;
 
-    case SDLK_l: // L: toggle between lab4 and lab5 scenes
+        // ---- TECLES LAB5 ----
+    case SDLK_g: // G: Gouraud
+        if (!in_lab4 && gouraud_material) {
+            use_gouraud = true;
+            for (auto e : entities) e->material = gouraud_material;
+            std::cout << "Shading: GOURAUD\n";
+        }
+        break;
+
+    case SDLK_p: // P: Phong
+        if (!in_lab4 && phong_material) {
+            use_gouraud = false;
+            for (auto e : entities) e->material = phong_material;
+            std::cout << "Shading: PHONG\n";
+        }
+        break;
+
+    case SDLK_s: // S: toggle specular texture
+        if (!in_lab4 && gouraud_material && phong_material) {
+            gouraud_material->use_specular_texture = !gouraud_material->use_specular_texture;
+            phong_material->use_specular_texture = !phong_material->use_specular_texture;
+            std::cout << "Specular texture: " << gouraud_material->use_specular_texture << "\n";
+        }
+        break;
+
+    case SDLK_n: // N: toggle normal texture (LAB5) o near plane (LAB4)
+        if (!in_lab4 && gouraud_material && phong_material) {
+            gouraud_material->use_normal_texture = !gouraud_material->use_normal_texture;
+            phong_material->use_normal_texture = !phong_material->use_normal_texture;
+            std::cout << "Normal texture: " << gouraud_material->use_normal_texture << "\n";
+        }
+        else {
+            current_camera_property = CAM_NEAR;
+            std::cout << "Camera property: NEAR\n";
+        }
+        break;
+
+        // ---- TOGGLE LAB4/LAB5 ----
+    case SDLK_l:
         in_lab4 = !in_lab4;
-        std::cout << "Toggled lab: now in " << (in_lab4 ? "LAB4" : "LAB5") << std::endl;
+        std::cout << "Now in " << (in_lab4 ? "LAB4" : "LAB5") << std::endl;
         break;
 
-	case SDLK_n: //N = near 
-        current_camera_property = CAM_NEAR;
-        std::cout << "Camera property: NEAR" << std::endl;
-        break;
-
-	case SDLK_g: //F = far
-        current_camera_property = CAM_FAR;
-        std::cout << "Camera property: FAR" << std::endl;
-        break;
-
-	case SDLK_v: //FOV = camp de visió
+    case SDLK_v:
         current_camera_property = CAM_FOV;
-        std::cout << "Camera property: FOV" << std::endl;
+        std::cout << "Camera property: FOV\n";
         break;
 
-    // Render toggles
-    case SDLK_t: // T: toggle texture vs vertex color
-    {
+    case SDLK_t:
         for (auto e : entities) e->use_texture = !e->use_texture;
-        std::cout << "Toggled use_texture for all entities: " << (entities.size() ? entities[0]->use_texture : false) << std::endl;
         break;
-    }
 
-    case SDLK_z: // Z: toggle occlusions
-    {
+    case SDLK_z:
         use_occlusions = !use_occlusions;
-        std::cout << "Toggled occlusions: " << use_occlusions << std::endl;
         break;
-    }
 
     case SDLK_u:
-    {
         for (auto e : entities) e->interpolate_uvs = !e->interpolate_uvs;
-        std::cout << "Toggled interpolate_uvs for all entities: " << (entities.size() ? entities[0]->interpolate_uvs : false) << std::endl;
         break;
-    }
 
-    case SDLK_w: // W: toggle wireframe / filled
-    {
+    case SDLK_w:
         for (auto e : entities) {
-            if (e->mode == Entity::eRenderMode::WIREFRAME) e->mode = Entity::eRenderMode::TRIANGLES_INTERPOLATED;
-            else e->mode = Entity::eRenderMode::WIREFRAME;
+            if (e->mode == Entity::eRenderMode::WIREFRAME)
+                e->mode = Entity::eRenderMode::TRIANGLES_INTERPOLATED;
+            else
+                e->mode = Entity::eRenderMode::WIREFRAME;
         }
-        std::cout << "Toggled wireframe/triangles for all entities" << std::endl;
         break;
-    }
 
-    //AUGMENTAR 
-    case SDLK_PLUS: // +
-	case SDLK_EQUALS: //tecla + sense shift
-	case SDLK_KP_PLUS: //tecla + del teclaT numéric
+        // ---- AUGMENTAR / DISMINUIR ----
+    case SDLK_PLUS:
+    case SDLK_EQUALS:
+    case SDLK_KP_PLUS:
     {
-		if (current_camera_property == CAM_NONE) //si no s'ha seleccionat cap propietat de la càmera, no fer res
-            break;
-
+        if (current_camera_property == CAM_NONE) break;
         switch (current_camera_property) {
-
-		case CAM_NEAR: //augmentar el planol de prop de la càmera
+        case CAM_NEAR:
             camera->near_plane += 0.01f * camera->near_plane + 0.01f;
-            if (camera->near_plane < 0.001f)
-                camera->near_plane = 0.001f;
-            if (camera->near_plane > camera->far_plane - 0.01f)
-                camera->near_plane = camera->far_plane - 0.01f;
-			std::cout << "Camera near: " << camera->near_plane << std::endl; //missatge del nou planol de prop (consola)
+            if (camera->near_plane < 0.001f) camera->near_plane = 0.001f;
+            if (camera->near_plane > camera->far_plane - 0.01f) camera->near_plane = camera->far_plane - 0.01f;
+            std::cout << "Camera near: " << camera->near_plane << std::endl;
             break;
-
-		case CAM_FAR: //augmentar el planol de lluny de la càmera
+        case CAM_FAR:
             camera->far_plane += 10.0f;
-			std::cout << "Camera far: " << camera->far_plane << std::endl; //missatge del nou planol de lluny (consola)
+            std::cout << "Camera far: " << camera->far_plane << std::endl;
             break;
-
-		case CAM_FOV: //augmentar el camp de visió de la càmera
+        case CAM_FOV:
             camera->fov += 1.0f;
-            if (camera->fov > 179.0f)
-                camera->fov = 179.0f;
-			std::cout << "Camera fov: " << camera->fov << std::endl; //missatge nova FOV (consola)
+            if (camera->fov > 179.0f) camera->fov = 179.0f;
+            std::cout << "Camera fov: " << camera->fov << std::endl;
             break;
-
-        default:
-            break;
+        default: break;
         }
-
-		camera->UpdateProjectionMatrix(); //actualitzar la matriu de projecció de la càmera amb les noves propietats
+        camera->UpdateProjectionMatrix();
         break;
     }
 
-    //DISMINUIR 
-	case SDLK_MINUS: // -
-	case SDLK_KP_MINUS: //tecla - del teclat numéric
+    case SDLK_MINUS:
+    case SDLK_KP_MINUS:
     {
-		if (current_camera_property == CAM_NONE) //si no s'ha seleccionat cap propietat de la càmera no fer res
-            break;
-
+        if (current_camera_property == CAM_NONE) break;
         switch (current_camera_property) {
-
-		case CAM_NEAR: //disminuir el planol de prop de la càmera
+        case CAM_NEAR:
             camera->near_plane -= 0.01f * camera->near_plane + 0.01f;
-            if (camera->near_plane < 0.001f)
-                camera->near_plane = 0.001f;
-            if (camera->near_plane > camera->far_plane - 0.01f)
-                camera->near_plane = camera->far_plane - 0.01f;
-			std::cout << "Camera near: " << camera->near_plane << std::endl; //missatge del nou planol de prop
+            if (camera->near_plane < 0.001f) camera->near_plane = 0.001f;
+            if (camera->near_plane > camera->far_plane - 0.01f) camera->near_plane = camera->far_plane - 0.01f;
+            std::cout << "Camera near: " << camera->near_plane << std::endl;
             break;
-
-		case CAM_FAR: //disminuir el planol de lluny de la càmera
+        case CAM_FAR:
             camera->far_plane -= 10.0f;
-            if (camera->far_plane < camera->near_plane + 1.0f)
-                camera->far_plane = camera->near_plane + 1.0f;
-			std::cout << "Camera far: " << camera->far_plane << std::endl; //missatge del nou planol de lluny
+            if (camera->far_plane < camera->near_plane + 1.0f) camera->far_plane = camera->near_plane + 1.0f;
+            std::cout << "Camera far: " << camera->far_plane << std::endl;
             break;
-
-		case CAM_FOV: //disminuir el camp de visió de la càmera
+        case CAM_FOV:
             camera->fov -= 1.0f;
-            if (camera->fov < 1.0f)
-                camera->fov = 1.0f;
-			std::cout << "Camera fov: " << camera->fov << std::endl; //missatge de la nova FOV
+            if (camera->fov < 1.0f) camera->fov = 1.0f;
+            std::cout << "Camera fov: " << camera->fov << std::endl;
             break;
-
-        default:
-            break;
+        default: break;
         }
-
-		camera->UpdateProjectionMatrix(); //actualitzar la matriu de projecció de la càmera amb les noves propietats
+        camera->UpdateProjectionMatrix();
         break;
     }
     }
 }
+
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {

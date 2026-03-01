@@ -122,12 +122,12 @@ public:
 class Application
 {
 public:
-	//LAB5
-	sUniformData uniform_data;           // dades uniformes globals
-	std::vector<sLight> scene_lights;    // llums de l'escena
-	int num_lights = 1;                  // nombre de llums actives
-	bool use_gouraud = false;            // G = gouraud, P = phong
-	Material* current_material = nullptr; // material actiu
+	// LAB5
+	sUniformData uniform_data; //estructura amb les dades uniformes que s'enviaran als shaders (matrius, llums, etc.)
+	int num_lights = 1; //nombre de llums a utilitzar al shader
+	bool use_gouraud = true; //toggle per canviar entre gouraud i phong
+	Material* gouraud_material = nullptr; //material per renderitzar amb shader de gouraud
+	Material* phong_material = nullptr; //material per renderitzar amb shader de phong
 
 
 	//LAB4
@@ -144,6 +144,8 @@ public:
 	Shader* quad_shader = nullptr;
 	Shader* raster_shader = nullptr; //2.5
 	Texture* quad_texture = nullptr;
+
+
 
 	//variables globals per a l'eina actual, color, amplada del contorn i si omplir formes
 	std::vector<Button> buttons;
