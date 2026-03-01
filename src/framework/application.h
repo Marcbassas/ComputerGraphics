@@ -153,19 +153,19 @@ public:
 	Image preview_framebuffer; //framebuffer de previsualització
 	Image framebuffer;
 
-	// Tool state
+	//Tool state
 	bool is_drawing = false; //si esta dibuxant
 	Vector2 start_pos; //posició inicial del dibuix
 	Vector2 current_pos; //posició actual del dibuix
 
-	// Window
+	//Window
 	SDL_Window* window = nullptr; 
 	int window_width; //amplada finestra
 	int window_height; //altura finestra
 
 	float time;
 
-	// Input
+	//Input
 	const Uint8* keystate;
 	int mouse_state; // Tells which buttons are pressed
 	Vector2 mouse_position; // Last mouse position
@@ -182,7 +182,7 @@ public:
 	void OnWheel(SDL_MouseWheelEvent event);
 	void OnFileChanged(const char* filename);
 
-	// Constructor and main methods
+	//Constructor and main methods
 	Application(const char* caption, int width, int height);
 	~Application();
 
@@ -190,16 +190,16 @@ public:
 	void Render( void );
 	void Update( float dt );
 
-	// Other methods to control the app
+	//Other methods to control the app
 	void SetWindowSize(int width, int height) {
 		glViewport( 0,0, width, height );
 		this->window_width = width;
 		this->window_height = height;
 		this->framebuffer.Resize(width, height);
 		this->preview_framebuffer.Resize(width, height);
-		// Actualitzar aspect ratio de la càmera per evitar deformacions en redimensionar
+		//Actualitzar aspect ratio de la càmera per evitar deformacions en redimensionar
 		if (camera) {
-			// Recalcular la perspectiva amb el nou aspect ratio
+			//Recalcular la perspectiva amb el nou aspect ratio
 			camera->SetPerspective(camera->fov, width / (float)height, camera->near_plane, camera->far_plane);
 		}
 	}
@@ -212,14 +212,14 @@ public:
 	}
 
 	//-------------lab3-----------------
-	// 2. Declara la càmera (molt important, t'està donant error perquè falta)
+	//2. Declara la càmera (molt important, t'està donant error perquè falta)
 	Camera* camera;
 
-	// 2.5 -> quina propietat de la camera estem modificant (NEAR/FAR/FOV)
+	//2.5 -> quina propietat de la camera estem modificant (NEAR/FAR/FOV)
 	enum CameraProperty { CAM_NONE = -1, CAM_NEAR = 0, CAM_FAR = 1, CAM_FOV = 2 };
 	CameraProperty current_camera_property = CAM_NONE; // per defecte no modifiquem cap propietat
 
-	// 3. El vector d'entitats
+	//3. El vector d'entitats
 	std::vector<Entity*> entities;
 
 	//renderitzar les oclusions (mode 1 i mode 2)
