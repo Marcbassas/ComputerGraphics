@@ -213,24 +213,32 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
 }
 */
 
-//RENDER AMB GPU I SHADER
+//LAB4: renderitzat simple amb shader directe
 void Entity::Render(Camera* camera)
 {
 	if (!mesh || !shader) return;
 
 	shader->Enable();
-
-	// Enviar matrius com a uniforms
 	shader->SetMatrix44("u_model", model);
 	shader->SetMatrix44("u_viewprojection", camera->viewprojection_matrix);
-
-	// Enviar textura si n'hi ha
 	if (texture_gpu)
 		shader->SetTexture("u_texture", texture_gpu);
 
 	mesh->Render(GL_TRIANGLES);
-
 	shader->Disable();
 }
 
+//LAB5: renderitzat amb material i llums
+void Entity::Render(sUniformData& uniformData)
+{
+	if (!mesh || !material) return; //si no hi ha malla o material --> no es pot renderitzar res --> sortim de la funció
+
+	uniformData.model = model; //actualitzar la model matrix a les dades uniformes
+
+	material->Enable(uniformData); //activar el material (envia tots els uniforms al shader)
+
+	mesh->Render(GL_TRIANGLES); //renderitzar la malla utilitzant triangles (GL_TRIANGLES) 
+
+	material->Disable(); //desactivar el material
+}
 

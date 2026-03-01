@@ -5,10 +5,16 @@
 #include "image.h" //imatges 
 #include "shader.h"	//shaders
 #include "texture.h" //textures
+#include "material.h"  
+
 
 class Entity {
 public:
 
+	//LAB5
+	Material* material = nullptr; //material de la entitat 
+
+	//LAB4
 	Shader* shader; //material de la entitat (punter a un shader que defineix com es renderitza l'entitat)
 	Texture* texture_gpu; //textura de la entitat a la GPU (punter a un objecte Texture que conté la textura carregada a la GPU)
 	
@@ -37,5 +43,7 @@ public:
 	//void Render(Image* framebuffer, Camera* camera, const Color& c); //renderitza l'entitat (2.2)
 	//void Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer);
 	void Update(float dt); //actualitza l'entitat
-	void Render(Camera* camera); //nou metode GPU --> renderitza l'entitat utilitzant OpenGL i el shader associat a l'entitat
+	void Render(Camera* camera); // LAB4: metode GPU --> renderitza l'entitat utilitzant OpenGL i el shader associat a l'entitat
+	void Render(sUniformData& uniformData);   //Lab5: renderitza l'entitat utilitzant OpenGL i el shader associat a l'entitat, pujant les dades uniformes necessaries al shader a través de la estructura sUniformData
+
 };

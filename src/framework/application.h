@@ -122,6 +122,13 @@ public:
 class Application
 {
 public:
+	//LAB5
+	sUniformData uniform_data;           // dades uniformes globals
+	std::vector<sLight> scene_lights;    // llums de l'escena
+	int num_lights = 1;                  // nombre de llums actives
+	bool use_gouraud = false;            // G = gouraud, P = phong
+	Material* current_material = nullptr; // material actiu
+
 
 	//LAB4
 	bool in_lab4 = true; //si estem al lab4 o lab5 --> AFEGIR TECLA L PER CANVIAR ENTRE LABS
