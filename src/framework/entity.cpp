@@ -214,8 +214,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zbuffer) {
 */
 
 //LAB4: renderitzat simple amb shader directe
-void Entity::Render(Camera* camera)
-{
+void Entity::Render(Camera* camera){
 	if (!mesh || !shader) return;
 
 	shader->Enable();
@@ -229,16 +228,40 @@ void Entity::Render(Camera* camera)
 }
 
 //LAB5: renderitzat amb material i llums
-void Entity::Render(sUniformData& uniformData)
-{
-	if (!mesh || !material) return; //si no hi ha malla o material --> no es pot renderitzar res --> sortim de la funció
+void Entity::Render(sUniformData& uniformData){
+	if (!mesh || !material) return;
 
-	uniformData.model = model; //actualitzar la model matrix a les dades uniformes
+	uniformData.model = model; //matriu de modelat de l'entitat que es passarà al shader a través de la estructura uniformData
 
-	material->Enable(uniformData); //activar el material (envia tots els uniforms al shader)
+	//PRIMERA PASSADA: normal
+	glDepthFunc(GL_LEQUAL); //gl_lequal per a que es renderitzin els píxels que estiguin a la mateixa profunditat que els píxels ja renderitzats
+	glBlendFunc(GL_ONE, GL_ONE); //additiu per sumar la contribució de cada llum
 
-	mesh->Render(GL_TRIANGLES); //renderitzar la malla utilitzant triangles (GL_TRIANGLES) 
+	for (int i = 0; i < uniformData.num_lights; i++){
+		// Copiem la llum actual a lights[0] per simplificar el shader
+		sLight current_light = uniformData.lights[i];
+		sUniformData pass_data = uniformData;
+		pass_data.lights[0] = current_light;
 
-	material->Disable(); //desactivar el material
+		if (i == 0) {
+			//primera passada: amb ambient
+			glDisable(GL_BLEND);
+			glDepthFunc(GL_LESS);
+		}
+		else {
+			//passades següents: additiu, sense ambient
+			glEnable(GL_BLEND);
+			glDepthFunc(GL_LEQUAL);
+			pass_data.ambient_light = Vector3(0.0f, 0.0f, 0.0f);
+		}
+
+		material->Enable(pass_data);
+		mesh->Render(GL_TRIANGLES);
+		material->Disable();
+	}
+
+	//restaurar estat OpenGL
+	glDisable(GL_BLEND);
+	glDepthFunc(GL_LESS);
 }
 

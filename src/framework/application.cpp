@@ -36,6 +36,7 @@ void Application::Init(void) { //inicialitza l'aplicació
 
     //INICIALITZACIO DE LA MALLA, ENTITATS I CÀMERA
     Mesh* m = new Mesh();
+	//LEE OBJ
     m->LoadOBJ("meshes/lee.obj");
 
     //crear les 3 entitats amb la malla carregada i posar-les a diferents posicions
@@ -68,8 +69,8 @@ void Application::Init(void) { //inicialitza l'aplicació
 
     //POSICIÓ INICIAL CAMERA
     camera->LookAt(
-        Vector3(0, -1, 8),    //posició de la càmera (eye)
-        Vector3(0, -1, 0),     //punt al que mira la càmera (center)
+        Vector3(0, 2, 5),    //posició de la càmera (eye)
+        Vector3(0, 1, 0),     //punt al que mira la càmera (center)
         Vector3(0, 1, 0)       //vector up de la càmera (up)
     );
 
@@ -109,6 +110,11 @@ void Application::Init(void) { //inicialitza l'aplicació
 	uniform_data.lights[0].color = Vector3(1.0f, 1.0f, 1.0f); //color de la llum 0 (blanca)
 	uniform_data.num_lights = 1; //nombre de llunms actives
 
+    //segona llum
+    uniform_data.lights[1].position = Vector3(-5.0f, 5.0f, 5.0f);
+    uniform_data.lights[1].color = Vector3(0.0f, 0.5f, 1.0f); // blava
+
+
     //crear material Gouraud
 	gouraud_material = new Material(); //material per a renderitzat Gouraud
 	gouraud_material->shader = new Shader(); //shader per a renderitzat Gouraud
@@ -127,6 +133,15 @@ void Application::Init(void) { //inicialitza l'aplicació
 	for (auto ent : entities) //per cada entitat = assignar el material de Gouraud
         ent->material = gouraud_material; 
 
+	// Material Gouraud --> assignar les textures corresponents al material de Gouraud
+    gouraud_material->color_texture = Texture::Get("textures/lee_color_specular.tga");
+    gouraud_material->specular_texture = Texture::Get("textures/lee_color_specular.tga"); // canal alpha
+    gouraud_material->normal_texture = Texture::Get("textures/lee_normal.tga");
+
+	// Material Phong --> assignar les textures corresponents al material de Phong
+    phong_material->color_texture = Texture::Get("textures/lee_color_specular.tga");
+    phong_material->specular_texture = Texture::Get("textures/lee_color_specular.tga"); // canal alpha
+    phong_material->normal_texture = Texture::Get("textures/lee_normal.tga");
 }
 
 void Application::Render(void){
@@ -280,13 +295,13 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) {
             std::cout << "Color texture: " << gouraud_material->use_color_texture << "\n";
         }
         break;
-    case SDLK_d:
+    case SDLK_d://submode quad
         if (current_mode == 1) { quad_mode = 3; std::cout << "Quad submode: d\n"; }
         break;
-    case SDLK_e:
+	case SDLK_e: //submode quad
         if (current_mode == 1) { quad_mode = 4; std::cout << "Quad submode: e\n"; }
         break;
-    case SDLK_f:
+	case SDLK_f: //submode quad
         if (current_mode == 1) { quad_mode = 5; std::cout << "Quad submode: f\n"; }
         break;
 
@@ -321,7 +336,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) {
             phong_material->use_normal_texture = !phong_material->use_normal_texture;
             std::cout << "Normal texture: " << gouraud_material->use_normal_texture << "\n";
         }
-        else {
+		else { //LAB4: seleccionar prop de càmera NEAR
             current_camera_property = CAM_NEAR;
             std::cout << "Camera property: NEAR\n";
         }
@@ -342,11 +357,11 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) {
         for (auto e : entities) e->use_texture = !e->use_texture;
         break;
 
-    case SDLK_z:
+	case SDLK_z: // toggle occlusions (LAB4)
         use_occlusions = !use_occlusions;
         break;
 
-    case SDLK_u:
+	case SDLK_u: // toggle UV interpolation (LAB4)
         for (auto e : entities) e->interpolate_uvs = !e->interpolate_uvs;
         break;
 
@@ -419,52 +434,68 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event) {
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {
-    int x = event.x;
-    int y = event.y;
+	int x = event.x; //posició actual del ratolí en X
+	int y = event.y; //posició actual del ratolí en Y
+	int xrel = x - last_mouse_x; //diferència de moviment del ratolí en X des de l'último evento
+	int yrel = y - last_mouse_y; //diferència de moviment del ratolí en Y des de l'último evento
+	last_mouse_x = x; //actualitzar la última posición del ratolí en X
+	last_mouse_y = y; //actualitzar la última posición del ratolí en Y
 
-    int xrel = x - last_mouse_x;
-    int yrel = y - last_mouse_y;
-
-    last_mouse_x = x;
-    last_mouse_y = y;
-
-    // només modes 3D (0,4,5)
+    //només modes 3D
     if (current_mode == 1 || current_mode == 2 || current_mode == 3) return;
 
     int buttons = SDL_GetMouseState(NULL, NULL);
 
-    // ORBITAR amb click esquerre
-    if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT))
-    {
+    //ORBITAR amb click esquerre
+	if (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) { //si el botó esquerre està premut --> orbitar la càmera al voltant del punt central de la càmera (camera->center) en funció del moviment del ratolí (xrel, yrel)
         float sensitivity = 0.005f;
         float angY = -xrel * sensitivity;
         float angX = -yrel * sensitivity;
 
-        Vector3 dir = camera->eye - camera->center;
+		Vector3 dir = camera->eye - camera->center; //vector direcció des del punt central de la càmera fins a la posició de la càmera (camera->eye)
 
-        Matrix44 rotY;
-        rotY.MakeRotationMatrix(angY, Vector3(0, 1, 0)); // rotar al voltant Y global
-        dir = rotY.RotateVector(dir);
+		Matrix44 rotY; //matriu de rotació al voltant de l'eix Y per orbitar horitzontalment
+		rotY.MakeRotationMatrix(angY, Vector3(0, 1, 0)); //aplicar rotació al vector direcció per orbitar horitzontalment
+		dir = rotY.RotateVector(dir); //rotar el vector direcció al voltant de l'eix Y
 
-        Vector3 right = dir.Cross(camera->up).Normalize();
-        Matrix44 rotX;
-        rotX.MakeRotationMatrix(angX, right);
-        dir = rotX.RotateVector(dir);
+		Vector3 right = dir.Cross(camera->up).Normalize(); //vector right perpendicular al vector direcció i al vector up de la càmera, normalitzat per orbitar verticalment
+		Matrix44 rotX; //matriu de rotació al voltant del vector right per orbitar verticalment
+		rotX.MakeRotationMatrix(angX, right); //aplicar rotació al vector direcció per orbitar verticalment
+		dir = rotX.RotateVector(dir); //rotar el vector direcció al voltant del vector right
 
-        camera->eye = camera->center + dir;
+		camera->eye = camera->center + dir; //actualitzar la posició de la càmera (camera->eye) sumant el vector direcció rotat al punt central de la càmera (camera->center) per orbitar al voltant del punt central
     }
-    // PAN amb click dret
-    else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT))
-    {
-        float panSpeed = 0.02f;
-        Vector3 forward = (camera->center - camera->eye).Normalize();
+    //PAN amb click dret
+    else if (buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)){
+        //panSpeed escala amb la distància per moure's proporcionalment
+        float dist = camera->eye.Distance(camera->center);
+        float panSpeed = dist * 0.001f;
+
+        Vector3 forward = (camera->center - camera->eye).Normalize(); 
         Vector3 right = forward.Cross(camera->up).Normalize();
         Vector3 up = right.Cross(forward).Normalize();
 
         Vector3 delta = (right * (float)(-xrel)) * panSpeed + (up * (float)(yrel)) * panSpeed;
-        camera->eye += delta;
-        camera->center += delta;
+		camera->eye += delta; //moure la posició de la càmera (camera->eye) sumant el delta calculat per panear horitzontalment i verticalment
+		camera->center += delta; //moure el punt central de la càmera (camera->center) sumant el mateix delta per mantenir la direcció de la càmera mentre paneja
     }
+}
+
+void Application::OnWheel(SDL_MouseWheelEvent event) { //ZOOM AMB RODA DEL RATOLÍ
+	float dy = event.preciseY; //moviment vertical de la roda del ratolí, amb precisió flotant, positiu cap a fora (alejando) i negatiu cap a dentro (acercando)
+
+    //només als modes 3D (no als quads)
+    if (current_mode == 1) return;
+
+    float zoom_speed = 0.1f;
+    float dist = camera->eye.Distance(camera->center);
+    float new_distance = dist - (dy * dist * zoom_speed); // escala amb la distància
+
+	if (new_distance < 2.0f) new_distance = 2.0f; //limitar la distància mínima per evitar que la càmera passi al punt central i es giri
+	if (new_distance > 100.0f) new_distance = 100.0f; //limitar la distància máxima per evitar que la càmera s'allunyi massa i perdi el punt central de vista
+
+    Vector3 direction = (camera->center - camera->eye).Normalize();
+    camera->eye = camera->center - (direction * new_distance);
 }
 
 
@@ -478,28 +509,6 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event) { //CLICK DEL RA
 void Application::OnMouseButtonUp(SDL_MouseButtonEvent event) { //CLICK DEL RATOLI (RELEASE)
 }
 
-
-
-void Application::OnWheel(SDL_MouseWheelEvent event) //ZOOM AMB LA RODA DEL RATOLI
-{
-	float dy = event.preciseY;
-
-	//zoom amb la roda del ratolí (modes 1 i 2)
-	if (current_mode != 0)
-	{
-		float zoom_speed = 1.0f; // Velocitat de zoom
-		Vector3 direction = (camera->center - camera->eye).Normalize(); //direcció de la càmera des de l'eye cap al center (normalitzada)
-		float current_distance = camera->eye.Distance(camera->center); //distància actual de la càmera al centre (punt al que mira)
-		float new_distance = current_distance - (dy * zoom_speed); 
-
-		//limitar distancia min i max per evitar que la càmera es posi massa aprop o massa lluny del centre
-		if (new_distance < 2.0f) new_distance = 2.0f;     //no més aprop de 2 unitats
-		if (new_distance > 50.0f) new_distance = 50.0f;   //no més lluny de 50 unitats
-
-		//actualitzar la posició de l'eye mantenint la direcció
-		camera->eye = camera->center - (direction * new_distance);
-	}
-}
 
 void Application::OnFileChanged(const char* filename)//detecta canvi en un fitxer
 { 
